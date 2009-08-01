@@ -41,6 +41,8 @@ def test_readtoken():
     assert readtoken("(hello)") == ("(", "hello)")
 test_list.append(test_readtoken)
 
+
+
 # -----------------------------------------------------------------------------
 
 def tokenize(text):
@@ -60,3 +62,5 @@ for item in test_list:
     item()
 
 # -----------------------------------------------------------------------------
+
+
