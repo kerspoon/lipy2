@@ -35,4 +35,4 @@ def repl(context, parser):
         except StopIteration:
             return None, None
 
-print repl(environment(),parse(tokenise(reader_raw())))
+print repl(environment(),parse(tokenize(reader_raw())))

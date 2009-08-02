@@ -9,9 +9,9 @@ normalchars = set(atoms)
 
 # -----------------------------------------------------------------------------
 
-def readtoken(input):
+def readtoken(nninput):
     tok = []
-    ninput = input.lstrip()
+    ninput = nninput.lstrip()
     for x in ninput:
         if x in specialtokens:
             if len(tok) == 0: 
@@ -23,10 +23,14 @@ def readtoken(input):
             break
         else:
             assert False, "invalid input"
-    # assert len(tok) != 0
-    ninput = ninput[len(tok):].rstrip()
-    text = "".join(tok)
-    return (text,ninput)
+    return "".join(tok), ninput[len(tok):].rstrip()
+
+def readtokens(text):
+    res = []
+    while len(text) != 0:
+        tok, text = readtoken(text)
+        res.append(tok)
+    return res
 
 def test_readtoken():
     print "testing: readtoken"
@@ -45,15 +49,17 @@ test_list.append(test_readtoken)
 
 # -----------------------------------------------------------------------------
 
-def tokenize(text):
-    while len(text) != 0:
-        (tok, text) = readtoken(text)
-        yield tok
+def tokenize(iterable):
+    if isinstance(iterable,str):
+        yield readtokens(iterable)
+    else:
+        for text in iterable:
+            yield readtokens(text)
 
 def test_tokenize():
     print "testing: tokenize"
-    assert list(tokenize("'(helloo)  ")) == ["'", '(', 'helloo', ')']
-    assert list(tokenize(" ' ( helloo ) ")) == ["'", '(', 'helloo', ')']
+    assert list(tokenize(["'(helloo)  "])) == [["'", '(', 'helloo', ')']]
+    assert list(tokenize([" ' ( helloo ) "])) == [["'", '(', 'helloo', ')']]
 test_list.append(test_tokenize)
 
 # -----------------------------------------------------------------------------

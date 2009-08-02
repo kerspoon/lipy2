@@ -115,7 +115,7 @@ def test():
     print "-----"
     print "result=", list(parse(iterator_undo(tokenize("(a b c ())"))))
     print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a c . b c)"))))
+    # print "result=", list(parse(iterator_undo(tokenize("(a c . b c)"))))
     print "-----"
 
 test()
