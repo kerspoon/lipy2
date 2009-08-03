@@ -1,4 +1,6 @@
 
+from repl import eval_list
+
 class function:
     def __init__(self,func,specialform=False):
         self.func = func
@@ -27,13 +29,23 @@ def predefined_function(function):
             arg, args = args
             argList.append(arg)
         return continuation, function(*argList)
-    return func
+    return function(func)
 
 def display(continutation, context, args):
-    print args 
+    print "FUNC display"
+    print args[0]
 
 def display2(arg):
+    print "mmmmmmm"
     print arg
 
-basic_funcs = { ("display", display),
-                ("display2", predefined_function(display2))}
+def func_quote(continutation, context, args):
+    print "FUNC QUOTE"
+    return args[0]
+
+basic_funcs = [ ("display", function(display)),
+                ("nil", "nil"),
+                ("quote", function(func_quote,True)),
+                ("display2", predefined_function(display2))]
+
+

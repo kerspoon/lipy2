@@ -1,5 +1,7 @@
 
-from symbol import NIL, QUOTE, symbol
+from symbol import NIL, QUOTE
+
+# todo make sure it only accepts valid chars
 
 class iterator_undo(object):   # undo-able iterator wrapper
     def __init__(self, iterable):
@@ -84,6 +86,7 @@ def inner_parse(tokens):
         raise Exception("can't happen")
 
 def parse(tokens):
+    tokens = iterator_undo(tokens)
     while (True):
         yield inner_parse(tokens)
 
@@ -91,17 +94,20 @@ def sexp_str(sexp):
     text = ""
     if isinstance(sexp,list):
         text += "( "
-        text += sexp_str(sexp[0])
-        text += " "
-        text += sexp_str(sexp[1])
-        text += ") "
-    elif isinstance(sexp,symbol):
-        text += str(sexp)
+        while (isinstance(sexp,list)):
+            assert(len(sexp)==2)
+            text += sexp_str(sexp[0]) + " "
+            sexp = sexp[1]
+        assert(isinstance(sexp,str))
+
+        if sexp != "nil":
+            text += ". " + sexp_str(sexp[0]) + " "
+        text += ")"
     elif isinstance(sexp,str):
         text += sexp
     else:
-        print str(sexp)
-        raise Exception("can't happen")
+        print type(sexp), str(sexp)
+        raise Exception("must be list or str")
     return text 
 
 def test():
@@ -125,14 +131,17 @@ def test():
         print "----"
         print "test    :", test
         print "expected:", expected
-        tokens = iterator_undo(tokenize([test]))
-        # print "tokens  :", list(tokens)[0]
+        tokens = tokenize([test])
         result = list(parse(tokens))
 
         print "result  :", 
         for sexp in result:
             print sexp,
         print 
-        print "printed :", [sexp_str(x) for x in result]
-test()
+        print "printed :", 
+        for x in result:
+            print sexp_str(x),
+        print 
+
+# test()
 

@@ -14,6 +14,7 @@ class environment:
         """create a frame with no parent and the binding given"""
         self.frame = {}
         for sym, val in zip(syms, vals):
+            assert(isinstance(sym,str))
             self.frame[sym] = val
         self.parent = parent
 
