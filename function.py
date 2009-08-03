@@ -22,13 +22,13 @@ class function:
 #Convert a python function into a form
 #suitable for the interpreter
 # TODO this should be a deccorator
-def predefined_function(function):
+def predefined_function(inputfunction):
     def func(continuation, context, args):
         argList = []
-        while args!=None:
+        while args != "nil":
             arg, args = args
             argList.append(arg)
-        return continuation, function(*argList)
+        return continuation, inputfunction(*argList)
     return function(func)
 
 def display(continutation, context, args):
@@ -36,16 +36,16 @@ def display(continutation, context, args):
     print args[0]
 
 def display2(arg):
-    print "mmmmmmm"
+    print "FUNC display2"
     print arg
 
 def func_quote(continutation, context, args):
     print "FUNC QUOTE"
     return args[0]
 
-basic_funcs = [ ("display", function(display)),
-                ("nil", "nil"),
-                ("quote", function(func_quote,True)),
-                ("display2", predefined_function(display2))]
+basic_environment = [ ("display", function(display)),
+                      ("nil", "nil"),
+                      ("quote", function(func_quote,True)),
+                      ("display2", predefined_function(display2))]
 
 

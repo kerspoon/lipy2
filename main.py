@@ -2,7 +2,7 @@
 from lex import tokenize
 from parse import parse
 from environment import environment
-from function import basic_funcs, function
+from function import basic_environment, function
 from repl import repl
 
 def reader_raw():
@@ -21,7 +21,8 @@ def reader_raw():
             yield code
             code = ""
 
-syms, vals = zip(*basic_funcs)
+syms, vals = zip(*basic_environment)
 print repl(environment(syms, vals), parse(tokenize(["(display 'hello)"])))
+print repl(environment(syms, vals), parse(tokenize(["(display2 'hello)"])))
 
 # print repl(environment(),parse(tokenize(reader_raw())))
