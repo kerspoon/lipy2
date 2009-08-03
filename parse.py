@@ -1,5 +1,5 @@
 
-from symbol import NIL, QUOTE 
+from symbol import NIL, QUOTE, symbol
 
 class iterator_undo(object):   # undo-able iterator wrapper
     def __init__(self, iterable):
@@ -47,18 +47,13 @@ def inner_parse(tokens):
     """take the token list from the lexer and make it into an object"""
 
     tok = tokens.next()
-    # print "parse start:", tok 
-
-    # if tok == ")":
-    #     print "Error", [tok] + list(tokens)
-    #     exit
+    # print "inner_parse:", tok
 
     assert len(tok) != 0, "zero sized token"
     assert tok != ".", "found '.' outside of pair"
     assert tok != ")", "found ')' mismatched bracket"
 
     if tok == "'":
-        # print "got a quote"
         return [QUOTE, [inner_parse(tokens), NIL]]
     elif tok == "(":
         tok = tokens.next()
@@ -69,7 +64,6 @@ def inner_parse(tokens):
         tokens.undo(tok)
         sexp = [inner_parse(tokens), NIL]
         full_sexp = sexp
-        # print "sexp:", full_sexp, tokens.peek()
 
         while (tokens.peek() not in [")", "."]):
             sexp[1] = [inner_parse(tokens),NIL]
@@ -77,9 +71,7 @@ def inner_parse(tokens):
         
         tok = tokens.next()
         if tok == ".":
-            # print "peakr:", tokens.peek()
             sexp[1] = inner_parse(tokens)
-            # print "full_sexp", full_sexp
             assert tokens.next() == ")", "expected one sexp after a fullstop"
         else:
             assert tok == ")"
@@ -87,36 +79,60 @@ def inner_parse(tokens):
     else:
         # we have a symbol or number
         # print "symbol:", tok, tokens.peek()
-        
-        return tok
+        if isinstance(tok,str):
+            return tok
+        raise Exception("can't happen")
 
 def parse(tokens):
     while (True):
         yield inner_parse(tokens)
 
+def sexp_str(sexp):
+    text = ""
+    if isinstance(sexp,list):
+        text += "( "
+        text += sexp_str(sexp[0])
+        text += " "
+        text += sexp_str(sexp[1])
+        text += ") "
+    elif isinstance(sexp,symbol):
+        text += str(sexp)
+    elif isinstance(sexp,str):
+        text += sexp
+    else:
+        print str(sexp)
+        raise Exception("can't happen")
+    return text 
+
 def test():
     from lex import tokenize
 
-    print "result=", list(parse(iterator_undo(tokenize("a"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("'a"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("()"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a )"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a b)"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a c . b)"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a . b)"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(() ())"))))
-    print "-----"
-    print "result=", list(parse(iterator_undo(tokenize("(a b c ())"))))
-    print "-----"
-    # print "result=", list(parse(iterator_undo(tokenize("(a c . b c)"))))
-    print "-----"
+    to_process = [ ("()"        , "NIL"),
+                   ("'()", None),
+                   ("'a", None),
+                   ("'( a b)", None),
+                   ("()", None),
+                   ("(a)", None),
+                   ("('a)", None),
+                   ("(a b)", None),
+                   ("(a b c)", None),
+                   ("(a b c d e f (g) h (i j) k (l m n) o (p q (r s) t) u (v (w (x (y (z))))))", None),
+                   ("(a . b)", None),
+                   ("(a b . c)", None),
+                   ("(() (()()))", None)]
+    
+    for test, expected in to_process:
+        print "----"
+        print "test    :", test
+        print "expected:", expected
+        tokens = iterator_undo(tokenize([test]))
+        # print "tokens  :", list(tokens)[0]
+        result = list(parse(tokens))
 
+        print "result  :", 
+        for sexp in result:
+            print sexp,
+        print 
+        print "printed :", [sexp_str(x) for x in result]
 test()
 

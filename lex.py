@@ -46,7 +46,6 @@ def test_readtoken():
 test_list.append(test_readtoken)
 
 
-
 # -----------------------------------------------------------------------------
 
 def tokenize(iterable):
@@ -54,12 +53,14 @@ def tokenize(iterable):
         yield readtokens(iterable)
     else:
         for text in iterable:
-            yield readtokens(text)
+            while len(text) != 0:
+                tok, text = readtoken(text)
+                yield tok
 
 def test_tokenize():
     print "testing: tokenize"
-    assert list(tokenize(["'(helloo)  "])) == [["'", '(', 'helloo', ')']]
-    assert list(tokenize([" ' ( helloo ) "])) == [["'", '(', 'helloo', ')']]
+    assert list(tokenize(["'(helloo)  "])) == ["'", '(', 'helloo', ')']
+    assert list(tokenize([" ' ( helloo ) "])) == ["'", '(', 'helloo', ')']
 test_list.append(test_tokenize)
 
 # -----------------------------------------------------------------------------
