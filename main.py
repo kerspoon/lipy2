@@ -27,7 +27,7 @@ def testall():
         # -------------------------------------- Special Symbols
         ("nil"   , "()" ),
         ("nil"   , "nil" ),
-        ("true?" , "true?" ),
+        ("true" , "true" ),
         # -------------------------------------- Self Evaluating
         ("4"     , "4" ),
         ("-455"  , "-455" ),
@@ -44,7 +44,7 @@ def testall():
         ("ok"        , "(define (add8 y) (+ 8 y) )" ),
         ("ok"        , "(define (getspoon) 'spoon )" ),
         ("10"        , "(add8 m)" ),
-        ("y"         , "(if true? 'y 'n)" ),
+        ("y"         , "(if true 'y 'n)" ),
         ("5"         , "(if (= 2 3) (- 3) (+ 2 3) )" ),
         # ("#PROC"     , "(lambda (z) (+ 3 z))" ),
         ("13"        , "((lambda (z) (+ 3 z)) 10)" ),
@@ -55,9 +55,9 @@ def testall():
         ("4"         , "(begin (set! x -99) 4)"),
         ("-99"       , "x" ),
         # -------------------------------------- Nesting
-        ("10"        , "(if true? (if true? 10 20) 30 )"),
+        ("10"        , "(if true (if true 10 20) 30 )"),
         ("ok"        , "(define (add13 y) (+ ((lambda (z) (+ 3 z)) 10) y) )" ),
-        ("15"        , "(add13 (-(- 2)) )" ),
+        ("15"        , "(add13 (- 0(- 0 2)) )" ),
         # -------------------------------------- Shorthand quote
         ("hi"        , "'hi"),
         ("( + 3 4 )" , "'(+ 3 4)"),
@@ -76,14 +76,18 @@ def testall():
     env = environment(syms, vals)
 
     for n, (expected, inp) in enumerate(to_test):
-        print "----"
-        print "input    ", inp
-        print "expected ", expected
+        # print "----"
+        # print "input    ", inp
+        # print "expected ", expected
         tok = tokenize([inp])
         exp = parse(tok)
         res = repl(env,exp)
-        print "result   ", res    
+        # print "result   ", res    
         
         if str(res) != expected:
             print "mismatch error"
+            print "  > input    ", inp
+            print "  > expected ", expected
+            print "  > result   ", res   
+            
 testall()

@@ -1,5 +1,7 @@
 
 from symbol import NIL, QUOTE
+import re
+import string  
 
 # todo make sure it only accepts valid chars
 
@@ -45,6 +47,46 @@ def test_iterator_undo():
     
 test_iterator_undo()
 
+# -----------------------------------------------------------------------------
+
+re_num = re.compile(r"^[-+]?\d+$")
+normalchars = set(string.ascii_letters + string.digits + "-_<>%=!^&?*+/")
+
+def isnumber(str):
+    return re_num.match(str) != None
+
+def test_isnumber():
+    print "testing: isnumber"
+    assert isnumber("0")
+    assert isnumber("1")
+    assert isnumber("10")
+    assert isnumber("0001")
+    assert isnumber("01234567890")
+    assert isnumber("+0")
+    assert isnumber("+1")
+    assert isnumber("+10")
+    assert isnumber("+0001")
+    assert isnumber("+01234567890")
+    assert isnumber("-0")
+    assert isnumber("-1")
+    assert isnumber("-10")
+    assert isnumber("-0001")
+    assert isnumber("-01234567890")
+    assert not isnumber("")
+    assert not isnumber("--1")
+    assert not isnumber("_5")
+    assert not isnumber("asdf")
+    assert not isnumber("5a")
+    assert not isnumber("a5")
+    assert not isnumber("5a5")
+    assert not isnumber("a5a")
+    assert not isnumber("+a1")
+    assert not isnumber("+9a")
+    assert not isnumber("-9a")
+    assert not isnumber("-a3")
+    assert not isnumber("-10+")
+test_isnumber()
+
 def inner_parse(tokens):
     """take the token list from the lexer and make it into an object"""
 
@@ -76,12 +118,15 @@ def inner_parse(tokens):
             sexp[1] = inner_parse(tokens)
             assert tokens.next() == ")", "expected one sexp after a fullstop"
         else:
-            assert tok == ")"
+            assert tok == ")", "missing close bracket of pair"
         return full_sexp
     else:
         # we have a symbol or number
         # print "symbol:", tok, tokens.peek()
         if isinstance(tok,str):
+            if isnumber(tok):
+                return int(tok)
+            assert set(tok).issubset(normalchars), "invalid atom in symbol"
             return tok
         raise Exception("can't happen")
 
@@ -98,17 +143,20 @@ def sexp_str(sexp):
             assert(len(sexp)==2), "lists (cons pairs) must only have 2 elements"
             text += sexp_str(sexp[0]) + " "
             sexp = sexp[1]
-        assert isinstance(sexp,str), "must be str or list"
-        assert len(sexp) != 0, "zero sized token"
+        assert isinstance(sexp,(str,int)), "must be str, int or list"
+        assert isinstance(sexp,int) or len(sexp) != 0, "zero sized token"
 
         if sexp != "nil":
-            text += ". " + sexp_str(sexp[0]) + " "
+            text += ". " + sexp_str(sexp) + " "
         text += ")"
     elif isinstance(sexp,str):
+        assert set(sexp).issubset(normalchars), "invalid atom in symbol"
         text += sexp
+    elif isinstance(sexp,int):
+        text += str(sexp)
     else:
         print type(sexp), str(sexp)
-        raise Exception("must be list or str")
+        raise Exception("must be str, int or list")
     return text 
 
 def test():

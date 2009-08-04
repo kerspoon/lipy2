@@ -19,10 +19,10 @@ class procedure(object):
         continuation, args = eval_list(continuation, context, args)
 
         # add the arguments to the environment in a new frame
-        context = context.extened(self.vars,args)
+        context = context.extend(self.vars,args)
 
         # evaluate the body in an extened environment
-        result = lipy_eval(continuation, context, self.body)
+        continuation, result = lipy_eval(continuation, context, self.body)
 
         return continuation, result    
 
@@ -199,7 +199,17 @@ basic_environment = [
     ("lambda", function(lambda_func)),
     ("begin" , function(begin_func)),
     ("display", function(display)),
-    ("display2", predefined_function(display2))]
+    ("display2", predefined_function(display2)),
+    ("+", predefined_function(lambda *args:sum(args))),
+    ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
+    ("-", predefined_function(lambda a, b:a - b)),
+    ("<", predefined_function(lambda a, b:a < b)),
+    (">", predefined_function(lambda a, b:a > b)),
+    ("=", predefined_function(lambda a, b:a == b)),
+    ("cons", predefined_function(lambda a, b:[a, b])),
+    ("car", predefined_function(lambda(a, b):a)),
+    ("cdr", predefined_function(lambda(a, b):b))]
 
+# sexp_str, lipy_eval, call/cc, ^, environment
 
-
+    

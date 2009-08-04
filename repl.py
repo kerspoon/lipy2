@@ -11,9 +11,10 @@ def repl(context, parser):
        as function) then prints it's result"""
     continuation = suckmycont()
     for sexp in parser:
-        print "#< ", sexp_str(sexp)
+        # print "#< ", sexp_str(sexp)
         continuation, result = lipy_eval(continuation, context, sexp)
-        print "#> ", sexp_str(result)
+        # print "#> ", sexp_str(result)
+        return sexp_str(result) # make a yield 
 
     # for sexp in parser:
     #     continuation = make_cont(sexp)
@@ -25,6 +26,8 @@ def lipy_eval(continuation, context, code):
     # print "#e ", sexp_str(code)
     if isinstance(code,str):
         return continuation, context.lookup(code)
+    elif isinstance(code,int):
+        return continuation, code
     elif isinstance(code,list):
         continuation, funct = lipy_eval(continuation, context, code[0])
         # print "#a ", code[0]
@@ -35,7 +38,8 @@ def lipy_eval(continuation, context, code):
 
 def eval_list(continuation, context, args):
     """evaluate every item in the list and return the eval'ed list"""
-    if args is "nil": return continuation, "nil"
+    if args == "nil": return continuation, "nil"
     continuation, first = lipy_eval(continuation, context, args[0])
     continuation, rest = eval_list(continuation, context, args[1])
     return continuation, [first, rest]
+
