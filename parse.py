@@ -95,10 +95,11 @@ def sexp_str(sexp):
     if isinstance(sexp,list):
         text += "( "
         while (isinstance(sexp,list)):
-            assert(len(sexp)==2)
+            assert(len(sexp)==2), "lists (cons pairs) must only have 2 elements"
             text += sexp_str(sexp[0]) + " "
             sexp = sexp[1]
-        assert(isinstance(sexp,str))
+        assert isinstance(sexp,str), "must be str or list"
+        assert len(sexp) != 0, "zero sized token"
 
         if sexp != "nil":
             text += ". " + sexp_str(sexp[0]) + " "
