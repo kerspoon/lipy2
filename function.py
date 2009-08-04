@@ -87,7 +87,7 @@ def set_func(continuation, context, args):
     var = args[0]
     arg = args[1][0]
     context.set(var,arg)
-    return continuation, "ok"
+    return continuation, "set-ok"
 
 # -----------------------------------------------------------------------------
 # DEFINITION - done
@@ -108,16 +108,15 @@ def set_func(continuation, context, args):
 
 def define_func(continuation, context, args):
     if isinstance(args[0], str):
-        var = args[0]
-        arg = args[1][0]
+        (var,  (arg, tmp_nil)) = args 
+        assert tmp_nil == "nil", "invalid args to define"
     else:
-        var = args[0][0]
-        lambda_vars = args[0][1]
-        lambda_body = args[1]
+        ((var, lambda_vars), lambda_body) = args
         arg = ["lambda", [lambda_vars, lambda_body]]
+    context.add(var, "define-in-progress")
     continuation, result = lipy_eval(continuation,context,arg)
-    context.add(var, result)
-    return continuation, "ok"
+    context.set(var, result)
+    return continuation, "define-ok"
 
 # -----------------------------------------------------------------------------
 # IF - done
@@ -152,8 +151,9 @@ def if_func(continuation, context, args):
 # make a procedure.
 # 
 # example:
-#   #FUN <= (lambda (x) (+ 3 x))b
+#   #FUN <= (lambda (x) (+ 3 x))
 #   13   <= ((lambda (x) (+ 3 x)) 10)
+#   222  <= ((lambda (x) (+ 111 x) 222) 333)
 # -----------------------------------------------------------------------------
 
 def lambda_func(continuation, context, args):   
@@ -161,8 +161,8 @@ def lambda_func(continuation, context, args):
         lipy_vars = "nil"
     else:
         lipy_vars = args[0][0]
-    body = args[1][0]
-    return continuation, procedure(body, lipy_vars)
+    body = args[1]
+    return continuation, procedure(["begin", body], lipy_vars)
 
 # -----------------------------------------------------------------------------
 # BEGIN - done
@@ -188,6 +188,16 @@ def begin_func(continuation, context, args):
 
 # -----------------------------------------------------------------------------
 
+def environment_func(continuation, context, args):
+    assert args == "nil"
+    print context
+    return continuation, "nil"
+
+def to_scm_bool(x):
+    if x:
+        return "true"
+    return "false"
+
 basic_environment = [
     ("nil", "nil"),
     ("true", "true"),
@@ -203,12 +213,13 @@ basic_environment = [
     ("+", predefined_function(lambda *args:sum(args))),
     ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
     ("-", predefined_function(lambda a, b:a - b)),
-    ("<", predefined_function(lambda a, b:a < b)),
-    (">", predefined_function(lambda a, b:a > b)),
-    ("=", predefined_function(lambda a, b:a == b)),
+    ("<", predefined_function(lambda a, b:to_scm_bool(a < b))),
+    (">", predefined_function(lambda a, b:to_scm_bool(a > b))),
+    ("=", predefined_function(lambda a, b:to_scm_bool(a == b))),
     ("cons", predefined_function(lambda a, b:[a, b])),
     ("car", predefined_function(lambda(a, b):a)),
-    ("cdr", predefined_function(lambda(a, b):b))]
+    ("cdr", predefined_function(lambda(a, b):b)),
+    ("env", function(environment_func))]
 
 # sexp_str, lipy_eval, call/cc, ^, environment
 

@@ -1,4 +1,6 @@
 
+from parse import sexp_str
+
 class MissingSym(Exception):
     pass
 
@@ -32,12 +34,14 @@ class environment:
 
     def add(self, sym, val):
         """adds a new binding to the current frame of the environment"""
+        assert(isinstance(sym,str))
         if sym in self.frame:
             raise AlreadyDefined("symbol already in environment: " + sym)
         self.frame[sym] = val
 
     def set(self, sym, val):
         """changes an existing binding in the environment"""
+        assert(isinstance(sym,str))
         if sym in self.frame:
             self.frame[sym] = val
             return
@@ -45,6 +49,19 @@ class environment:
             raise MissingSym("symbol not in environment: " + sym)
         self.parent.set(sym, val)
 
+    def __str__(self):
+        ret = "\n"
+        for sym, val in self.frame.items():
+            if isinstance(val,list):
+                ret += sym + " = " + sexp_str(val) + "\n"
+            else:
+                ret += sym + " = " + str(val) + "\n"
+        ret += "---\n"
+        if self.parent is not None:
+            ret += str(self.parent)
+        else:
+            ret += "===\n"
+        return ret
 
 def test():
     topenv = environment(["a","b","c"],[1, 2, 3])

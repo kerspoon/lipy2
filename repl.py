@@ -2,6 +2,8 @@
 from symbol import NIL
 from parse import sexp_str
 
+DEBUG = True
+
 class suckmycont():
     def __str__(self):
         raise "poop"
@@ -11,10 +13,10 @@ def repl(context, parser):
        as function) then prints it's result"""
     continuation = suckmycont()
     for sexp in parser:
-        # print "#< ", sexp_str(sexp)
+        if DEBUG: print "#< ", sexp_str(sexp)
         continuation, result = lipy_eval(continuation, context, sexp)
-        # print "#> ", sexp_str(result)
-        return sexp_str(result) # make a yield 
+        if DEBUG: print "#> ", sexp_str(result)
+        return  sexp_str(result) # make a yield 
 
     # for sexp in parser:
     #     continuation = make_cont(sexp)
@@ -23,14 +25,14 @@ def repl(context, parser):
     #         continuation, result = lipy_eval(continuation, context, code)
 
 def lipy_eval(continuation, context, code):
-    # print "#e ", sexp_str(code)
+    if DEBUG: print "#e ", sexp_str(code)
     if isinstance(code,str):
         return continuation, context.lookup(code)
     elif isinstance(code,int):
         return continuation, code
     elif isinstance(code,list):
         continuation, funct = lipy_eval(continuation, context, code[0])
-        # print "#a ", code[0]
+        if DEBUG: print "#a ", code[0]
         return funct.apply(continuation, context, code[1])
     else:
         print type(code), code 

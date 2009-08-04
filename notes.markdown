@@ -6,7 +6,11 @@ We have a working lexer, parser and printer. It can take the following BNF:
     exp  ==: '(' sexp* ('.' sexp)? ')'
     sym  ==: [A-Za-z0-9]*
 
-This is converted into a python **list** or a **str**. Which can be printed back out. 
+This is converted into a python **list** or a **str**. Which can be printed back out. We can 'eval' properly and the test list works apart from printing functions and procedures. 
 
+To Do:
+  > recursive functions
+  > call with current continuation
+  > tail call optimisation
+  > macros
 
-WE do have some kind of eval. Not really sure what is working. 
