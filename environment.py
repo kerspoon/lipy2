@@ -25,16 +25,19 @@ class environment:
         if sym in self.frame:
             return self.frame[sym]
         if self.parent is None:
+            print self 
             raise MissingSym("symbol not in environment: " + sym)
         return self.parent.lookup(sym)
 
     def extend(self, syms, vals):
         """returns a new environment with a frame consisting of the new bindings"""
+        # print "EXTEND: ", zip(syms,vals)
         return environment(syms, vals, self)
 
     def add(self, sym, val):
         """adds a new binding to the current frame of the environment"""
         assert(isinstance(sym,str))
+        # print "ADD: ", sym, val
         if sym in self.frame:
             raise AlreadyDefined("symbol already in environment: " + sym)
         self.frame[sym] = val
@@ -42,6 +45,7 @@ class environment:
     def set(self, sym, val):
         """changes an existing binding in the environment"""
         assert(isinstance(sym,str))
+        # print "SET: ", sym, val
         if sym in self.frame:
             self.frame[sym] = val
             return
@@ -124,4 +128,4 @@ def test():
     test6()
     test7()
 
-test()
+# test()

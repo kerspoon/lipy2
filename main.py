@@ -43,7 +43,9 @@ def testall():
         ("define-ok" , "(define m 2)" ),
         ("define-ok" , "(define (add8 y) (+ 8 y) )" ),
         ("define-ok" , "(define (getspoon) 'spoon )" ),
+        ("define-ok" , "(define (mac x y z)  (+ x (* y z) ))" ),
         ("10"        , "(add8 m)" ),
+        ("1001"      , "(mac 1 10 100)" ),
         ("y"         , "(if true 'y 'n)" ),
         ("5"         , "(if (= 2 3) (- 3) (+ 2 3) )" ),
         # ("#PROC"     , "(lambda (z) (+ 3 z))" ),
@@ -108,33 +110,33 @@ def testall():
                                 (+ w y z))
                               (inner x 1))"""),
         ("111"         ,"(outer 10 100)"),
-        # -------------------------------------- Fibonacci James 2
+        # -------------------------------------- Fibonacci James
         ("define-ok"   , """(define (fibonacci-james n)
                                 (define (fib n1 n2 aaaaaa)
                                     (if (= aaaaaa n)
                                         n1
                                         (fib n2 (+ n1 n2) (+ aaaaaa 1))))
                                 (fib 0 1 0))"""),
-         ("55"         ,"(fibonacci-james 10)"),
+        ("55"         ,"(fibonacci-james 10)"),
         # -------------------------------------- Fibonacci
-        # ("define-ok"   , """(define fibonacci
-        #                       (lambda (n)
-        #                         (define fib 
-        #                           (lambda (n1 n2 cnt)
-        #                             (if (= cnt n)
-        #                                 n1
-        #                                 (fib n2 (+ n1 n2) (+ cnt 1)))))
-        #                         (fib 0 1 0)))"""),
-        #  ("55"         ,"(fibonacci 10)"),
+        ("define-ok"   , """(define fibonacci
+                              (lambda (n)
+                                (define fib 
+                                  (lambda (n1 n2 cnt)
+                                    (if (= cnt n)
+                                        n1
+                                        (fib n2 (+ n1 n2) (+ cnt 1)))))
+                                (fib 0 1 0)))"""),
+        ("55"         ,"(fibonacci 10)"),
         # -------------------------------------- Done
-        ("nil"         , "(env)" ),
+        # ("nil"         , "(env)" ),
         ("nil"         , "()" )]
 
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
     env = env.extend([],[])
 
-    DEBUG = True   
+    DEBUG = False   
 
     for n, (expected, inp) in enumerate(to_test):
         if DEBUG: print "----"
@@ -156,23 +158,20 @@ def testall():
             print "-------------"
             
 testall()
- 
+
 def testme(): 
     inp = """
-    (define fibonacci
-                    (lambda (n)
-                      (define fib 
-                        (lambda (n1 n2 cnt)
-                          (if (= cnt n)
-                              n1
-                              (fib n2 (+ n1 n2) (+ cnt 1)))))
-                      (fib 0 1 0)))
-    (fibonacci 10)
-    """
-
+        (define (mac x y z)  (+ x (* y z) ))
+        (mac 1 10 100)"""
+          #    (define (outer w x)
+          #      (define (inner y z)
+          #        (+ w y z))
+          #      (inner x 1))
+          #    (outer 10 100)
+          # """
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
-    repl(env,parse(tokenize([inp])))
+    repl(env.extend([],[]),parse(tokenize([inp])))
 
 # testme()
 
@@ -180,7 +179,7 @@ def main():
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
     while(True):
-        print repl(env,parse(tokenize(reader_raw())))
+        print repl(env.extend([],[]),parse(tokenize(reader_raw())))
 # main()
 
 

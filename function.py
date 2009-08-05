@@ -9,6 +9,32 @@ class function(object):
         continuation, result = self.func(continuation, context, args)
         return continuation, result
 
+def flatten(x):
+    """flatten(sequence) -> list
+
+    Returns a single, flat list which contains all elements retrieved
+    from the sequence and all recursively contained sub-sequences
+    (iterables).
+
+    Examples:
+    >>> [1, 2, [3,4], (5,6)]
+    [1, 2, [3, 4], (5, 6)]
+    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, MyVector(8,9,10)])
+    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
+    
+    http://kogs-www.informatik.uni-hamburg.de/~meine/python_tricks
+    """
+
+    result = []
+    for el in x:
+        #if isinstance(el, (list, tuple)):
+        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+
 class procedure(object):
     def __init__(self, body, lipy_vars):
         self.body = body
@@ -19,7 +45,7 @@ class procedure(object):
         continuation, args = eval_list(continuation, context, args)
 
         # add the arguments to the environment in a new frame
-        context = context.extend(self.vars,args)
+        context = context.extend(flatten(self.vars)[:-1], flatten(args)[:-1])
 
         # evaluate the body in an extened environment
         continuation, result = lipy_eval(continuation, context, self.body)
@@ -113,6 +139,7 @@ def define_func(continuation, context, args):
     else:
         ((var, lambda_vars), lambda_body) = args
         arg = ["lambda", [lambda_vars, lambda_body]]
+
     context.add(var, "define-in-progress")
     continuation, result = lipy_eval(continuation,context,arg)
     context.set(var, result)
@@ -160,7 +187,7 @@ def lambda_func(continuation, context, args):
     if args[0] == "nil":
         lipy_vars = "nil"
     else:
-        lipy_vars = args[0][0]
+        lipy_vars = args[0]
     body = args[1]
     return continuation, procedure(["begin", body], lipy_vars)
 

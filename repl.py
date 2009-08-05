@@ -2,7 +2,7 @@
 from symbol import NIL
 from parse import sexp_str
 
-DEBUG = True
+DEBUG = False
 
 class suckmycont():
     def __str__(self):
@@ -17,6 +17,7 @@ def repl(context, parser):
         continuation, result = lipy_eval(continuation, context, sexp)
         if DEBUG: print "#> ", sexp_str(result)
         return  sexp_str(result) # make a yield 
+        # print sexp_str(result) # make a yield 
 
     # for sexp in parser:
     #     continuation = make_cont(sexp)
@@ -44,4 +45,5 @@ def eval_list(continuation, context, args):
     continuation, first = lipy_eval(continuation, context, args[0])
     continuation, rest = eval_list(continuation, context, args[1])
     return continuation, [first, rest]
+
 
