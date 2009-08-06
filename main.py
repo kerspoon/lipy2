@@ -36,16 +36,16 @@ def testall():
         ("( + 3 4 )" , "(quote (+ 3 4))"),
         ("hello"     , "'hello"),
         ("( hello )" , "'(hello)"),
-        # ("define-ok" , "(define x 20)" ),
-        # ("20"        , "x" ),
-        # ("set-ok"    , "(set! x 44)" ),
-        # ("44"        , "x" ),
-        # ("define-ok" , "(define m 2)" ),
-        # ("define-ok" , "(define (add8 y) (+ 8 y) )" ),
-        # ("define-ok" , "(define (getspoon) 'spoon )" ),
-        # ("define-ok" , "(define (mac x y z)  (+ x (* y z) ))" ),
-        # ("10"        , "(add8 m)" ),
-        # ("1001"      , "(mac 1 10 100)" ),
+        ("define-ok" , "(define x 20)" ),
+        ("20"        , "x" ),
+        ("set-ok"    , "(set! x 44)" ),
+        ("44"        , "x" ),
+        ("define-ok" , "(define m 2)" ),
+        ("define-ok" , "(define (add8 y) (+ 8 y) )" ),
+        ("define-ok" , "(define (getspoon) 'spoon )" ),
+        ("define-ok" , "(define (mac x y z)  (+ x (* y z) ))" ),
+        ("10"        , "(add8 m)" ),
+        ("1001"      , "(mac 1 10 100)" ),
         ("y"         , "(if true 'y 'n)" ),
         ("5"         , "(if (= 2 3) (- 3) (+ 2 3) )" ),
         # ("#PROC"     , "(lambda (z) (+ 3 z))" ),
@@ -151,12 +151,10 @@ def testall():
         exp = parse(tok)
         exp = list(exp)
 
-        def repl2(a,b):
-            results = list(repl(env,exp))
-            assert len(results) == 1
-            return results[0]
+        results = list(repl(env,exp))
+        assert len(results) == 1
+        res = results[0]
 
-        res = repl2(env,exp)
         if DEBUG: print "result   ", res
         
         if str(res) != expected:

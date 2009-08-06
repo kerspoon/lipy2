@@ -32,27 +32,27 @@ class procedure(object):
         self.body = body
         self.vars = lipy_vars
     
-    def __call__(self, continuation, context, args):
-
-        def inner( evaled_args ):
+    def __call__(self, context, args, continuation):
+        # print "procedure", self, args
+        def call_inner( evaled_args ):
             # add the arguments to the environment in a new frame
-            context = context.extend(flatten(self.vars)[:-1], flatten(evaled_args)[:-1])
+            newcontext = context.extend(flatten(self.vars)[:-1], flatten(evaled_args)[:-1])
 
-            def inner2(result): 
+            def call_inner2(result): 
                 return thunk(continuation)(result)
 
             # evaluate the body in an extened environment
-            lipy_eval(context, self.body, inner2)
+            return thunk(lipy_eval)(newcontext, self.body, call_inner2)
 
         # evaluate the arguments
-        eval_list(context, args, inner)
+        return thunk(eval_list)(context, args, call_inner)
 
 #Convert a python function into a form
 #suitable for the interpreter
 # TODO this should be a deccorator
 # it also should be refectored, lots of messy code
 def predefined_function(inputfunction):
-    def func(continuation, context, args):
+    def func(context, args, continuation):
         def inner(evaled_args):
             argList = []
             while evaled_args != "nil":
@@ -62,15 +62,14 @@ def predefined_function(inputfunction):
             if result == None:
                 result = "nil"
             return thunk(continuation)(result)
-
-        eval_list(context, args, inner)
+        return thunk(eval_list)(context, args, inner)
     return func
 
-def display(continuation, context, args):
+def display(context, args, continuation):
     def inner (x):
         print x[0]
         return thunk(continuation)("nil")
-    eval_list(context, args, inner)
+    return thunk(eval_list)(context, args, inner)
 
 def display2(arg):
     # print "FUNC display2"
@@ -139,12 +138,13 @@ def define_func(context, args, continuation):
         arg = ["lambda", [lambda_vars, lambda_body]]
     context.add(var, "define-in-progress")
 
-    def inner(result): 
-        print "inner", result
+    def define_func_inner(result): 
+        # print "inner", result
         context.set(var, result)
         return thunk(continuation)("define-ok")
-    print "define_func", args
-    lipy_eval(context, arg, inner)
+
+    # print "define_func", args
+    return thunk(lipy_eval)(context, arg, define_func_inner)
 
 # -----------------------------------------------------------------------------
 # IF - done
@@ -217,7 +217,7 @@ def begin_func(context, args, continuation):
             return thunk(continuation)(res)
         return thunk(begin_func)(context, args[1], continuation)
         
-    lipy_eval(context, args[0], inner)
+    return thunk(lipy_eval)(context, args[0], inner)
 
 # -----------------------------------------------------------------------------
 
