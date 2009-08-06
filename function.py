@@ -107,11 +107,16 @@ def quote_func(context, args, continuation):
 # -----------------------------------------------------------------------------
 
 def set_func(context, args, continuation):
+
     var = args[0]
     arg = args[1][0]
-    context.set(var,arg)
-    return thunk(continuation)("set-ok")
 
+    def set_func_inner(evaled_arg):
+        context.set(var,evaled_arg)
+        return thunk(continuation)("set-ok")
+
+    return thunk(lipy_eval)(context, arg, set_func_inner)
+    
 # -----------------------------------------------------------------------------
 # DEFINITION - done
 # 
@@ -212,13 +217,36 @@ def lambda_func(context, args, continuation):
 
 def begin_func(context, args, continuation):
 
-    def inner(res):
+    def begin_func_inner(res):
         if args[1] == "nil":
             return thunk(continuation)(res)
         return thunk(begin_func)(context, args[1], continuation)
         
-    return thunk(lipy_eval)(context, args[0], inner)
+    return thunk(lipy_eval)(context, args[0], begin_func_inner)
 
+# -----------------------------------------------------------------------------
+# call/cc - done
+# 
+# (call/cc <lambda_exp>)
+# 
+# call the lambda_exp with the paremeter of the current continuation
+# 
+# -----------------------------------------------------------------------------
+
+def callcc_func(context, args, continuation):
+    stored_cont = continuation
+    def callable_continuation(context, args, continuation2):
+        print "doof"
+        return thunk(stored_cont)(args)
+
+    def callcc_func_inner(func):
+        print "yuup", func
+        xx = ["quote", [callable_continuation, "nil"]]
+        return thunk(func)(context, [xx, "nil"] , continuation)
+
+    return thunk(lipy_eval)(context, args[0], callcc_func_inner)
+
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 # def environment_func(context, args, continuation):
@@ -241,6 +269,7 @@ basic_environment = [
     ("if"    , if_func),
     ("lambda", lambda_func),
     ("begin" , begin_func),
+    ("callcc", callcc_func),
     ("display", display),
     ("display2", predefined_function(display2)),
     ("+", predefined_function(lambda *args:sum(args))),

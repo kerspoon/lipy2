@@ -78,6 +78,9 @@ def testall():
         ("nil"         , "(display 'hello)"),
         ("nil"         , "(display2 'hello)"),
         ("6"           , "((lambda (x) (+ x 1)) 5)"),
+        ("define-ok"   , "(define aax 2)"),
+        ("154"         , "((lambda (moose) (set! aax moose) 154) -73)"),
+        ("-73"         , "aax"),
         # -------------------------------------- Maths
         ("true"         , "(< 4 5)"),
         ("false"        , "(< 5 4)"),
@@ -169,17 +172,17 @@ testall()
 
 def testme(): 
     inp = """
-        (define (mac x y z)  (+ x (* y z) ))
-        (mac 1 10 100)"""
-          #    (define (outer w x)
-          #      (define (inner y z)
-          #        (+ w y z))
-          #      (inner x 1))
-          #    (outer 10 100)
-          # """
+    (define KK false)
+    (callcc (lambda (k) 6))
+    (display KK)
+    (callcc (lambda (jaaam) (set! KK jaaam)))
+    (display KK)
+    """
+
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
-    repl(env.extend([],[]),parse(tokenize([inp])))
+    for result in repl(env.extend([],[]),parse(tokenize([inp]))):
+        print result
 
 # testme()
 

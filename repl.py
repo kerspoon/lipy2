@@ -31,7 +31,7 @@ def lipy_eval(context, code, continuation):
             return thunk(func)(context, code[1], continuation)
         return thunk(lipy_eval)(context, code[0], inner_apply)
     else:
-        return "Error 1"
+        return "Error 1:", type(code), code 
 
 # eval_list :: Context -> sexp -> (sexp -> None) -> None
 def eval_list(context, args, continuation):

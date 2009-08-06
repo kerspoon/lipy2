@@ -149,7 +149,7 @@ def sexp_str(sexp):
             text += ". " + sexp_str(sexp) + " "
         text += ")"
     elif isinstance(sexp,str):
-        assert set(sexp).issubset(normalchars), "invalid atom in symbol"
+        assert set(sexp).issubset(normalchars), "invalid atom in symbol" + sexp
         text += sexp
     elif isinstance(sexp,int):
         text += str(sexp)
