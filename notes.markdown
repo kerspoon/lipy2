@@ -13,7 +13,10 @@ To Do:
   > allow functions and lambdas to be printed
   > read from file
   > call with current continuation
+  > strings
   > tail call optimisation
   > macros
+  > csv file parser
 
+^ + - / * = eq equal < > <= >= <> not and or display newline read 
 

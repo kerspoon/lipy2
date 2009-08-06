@@ -1,5 +1,4 @@
 
-from symbol import NIL, QUOTE
 import re
 import string  
 
@@ -98,19 +97,19 @@ def inner_parse(tokens):
     assert tok != ")", "found ')' mismatched bracket"
 
     if tok == "'":
-        return [QUOTE, [inner_parse(tokens), NIL]]
+        return ["quote", [inner_parse(tokens), "nil"]]
     elif tok == "(":
         tok = tokens.next()
 
         if tok == ")":
-            return NIL
+            return "nil"
 
         tokens.undo(tok)
-        sexp = [inner_parse(tokens), NIL]
+        sexp = [inner_parse(tokens), "nil"]
         full_sexp = sexp
 
         while (tokens.peek() not in [")", "."]):
-            sexp[1] = [inner_parse(tokens),NIL]
+            sexp[1] = [inner_parse(tokens),"nil"]
             sexp = sexp[1]
         
         tok = tokens.next()
@@ -162,7 +161,7 @@ def sexp_str(sexp):
 def test():
     from lex import tokenize
 
-    to_process = [ ("()"        , "NIL"),
+    to_process = [ ("()"        , "nil"),
                    ("'()", None),
                    ("'a", None),
                    ("'( a b)", None),

@@ -1,7 +1,7 @@
 
 # Predefined Symbols (can't be redefined)
-NIL = "nil"
-QUOTE = "quote"
+# NIL = "nil"
+# QUOTE = "quote"
 
 # LAMBDA = symbol("lambda")
 # IF = symbol("if")

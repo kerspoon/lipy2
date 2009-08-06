@@ -77,7 +77,7 @@ def testall():
         ("( as . nd )" , "'(as.nd)" ),
         ("nil"         , "(display 'hello)"),
         ("nil"         , "(display2 'hello)"),
-        ("6"            , "((lambda (x) (+ x 1)) 5)"
+        ("6"           , "((lambda (x) (+ x 1)) 5)"),
         # -------------------------------------- Maths
         ("true"         , "(< 4 5)"),
         ("false"        , "(< 5 4)"),

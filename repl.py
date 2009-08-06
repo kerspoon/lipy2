@@ -1,5 +1,4 @@
 
-from symbol import NIL
 from parse import sexp_str
 
 DEBUG = False
