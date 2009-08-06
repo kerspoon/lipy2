@@ -53,7 +53,7 @@ class procedure(object):
 # it also should be refectored, lots of messy code
 def predefined_function(inputfunction):
     def func(context, args, continuation):
-        def inner(evaled_args):
+        def predefined_function_inner(evaled_args):
             argList = []
             while evaled_args != "nil":
                 arg, evaled_args = evaled_args
@@ -62,14 +62,14 @@ def predefined_function(inputfunction):
             if result == None:
                 result = "nil"
             return thunk(continuation)(result)
-        return thunk(eval_list)(context, args, inner)
+        return thunk(eval_list)(context, args, predefined_function_inner)
     return func
 
 def display(context, args, continuation):
-    def inner (x):
+    def display_inner(x):
         print x[0]
         return thunk(continuation)("nil")
-    return thunk(eval_list)(context, args, inner)
+    return thunk(eval_list)(context, args, display_inner)
 
 def display2(arg):
     # print "FUNC display2"
@@ -236,11 +236,11 @@ def begin_func(context, args, continuation):
 def callcc_func(context, args, continuation):
     stored_cont = continuation
     def callable_continuation(context, args, continuation2):
-        print "doof"
-        return thunk(stored_cont)(args)
+        def callable_continuation_inner(arggg):
+            return thunk(stored_cont)(arggg)
+        return thunk(eval_list)(context, args, callable_continuation_inner)
 
     def callcc_func_inner(func):
-        print "yuup", func
         xx = ["quote", [callable_continuation, "nil"]]
         return thunk(func)(context, [xx, "nil"] , continuation)
 
@@ -259,6 +259,9 @@ def to_scm_bool(x):
         return "true"
     return "false"
 
+def newline_func():
+    print ""
+
 basic_environment = [
     ("nil", "nil"),
     ("true", "true"),
@@ -272,6 +275,7 @@ basic_environment = [
     ("callcc", callcc_func),
     ("display", display),
     ("display2", predefined_function(display2)),
+    ("newline", predefined_function(newline_func)),
     ("+", predefined_function(lambda *args:sum(args))),
     ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
     ("-", predefined_function(lambda a, b:a - b)),

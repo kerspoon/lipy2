@@ -172,24 +172,34 @@ def testall():
 
 def testme(): 
     inp = """
-    (define KK false)
+    (define MM false)
     (callcc (lambda (k) 6))
-    (display KK)
-    (callcc (lambda (jaaam) (set! KK jaaam)))
-    (display KK)
+    (display MM)
+    (callcc (lambda (jaaam) (set! MM jaaam)))
+    (display MM)
 
-(define CC #f)
-(let ((i 0))
-        (call/cc (lambda (k) (set! CC k)))
-        (printf "~s~n" i)
-        (set! i (+ i 1)))
-(CC nil)
+    (define CC false)
+    ((lambda (i)
+        (callcc (lambda (k) (set! CC k)))
+        (display i)
+        (set! i (+ i 1)))0)
+
+    (CC nil)
+    (CC nil)
+    (CC nil)
+
+    (define KK false)
+    (begin 
+         (display (callcc (lambda (k) (set! KK k) 'jam)))
+         (newline))
+    (KK 5)
+    (KK 'moose)
     """
 
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
     for result in repl(env.extend([],[]),parse(tokenize([inp]))):
-        print result
+        print "$", result
 
 testme()
 

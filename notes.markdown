@@ -11,12 +11,15 @@ This is converted into a python **list** or a **str**. Which can be printed back
 To Do:
   > allow functions and lambdas to be printed
   > read from file
-  > call with current continuation
   > strings
-  > tail call optimisation
   > macros
   > csv file parser
 
-^ + - / * = eq equal < > <= >= <> not and or display newline read 
+Test:
+  > call with current continuation
+  > tail call optimisation
+
+
+^ / * eq equal <= >= <> not and or read 
 
  
