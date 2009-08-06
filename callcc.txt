@@ -1,0 +1,92 @@
+
+
+----------------------------------------------------------------------
+At its heart, call/cc is something like the goto instruction. 
+
+The call/cc function takes one argument. That argument should itself be a function f (hence, our programming language should allow first-class citizenship of functions). call/cc will apply f to the current continuation. The current continuation is something which looks a lot like a function (at least in the Scheme version of call/cc it does; in the SML/NJ version it is a bit different but that is unimportant). If a continuation is applied to a value (or, as some prefer to say, thrown a value), it has the effect of making the call/cc (which produced that continuation) return that value. 
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+a closure is a procedure value (procedure definition + contextual environment) 
+a continuation is a semantic stack ('what remains to be executed')
+----------------------------------------------------------------------
+
+
+----------------------------------------------------------------------
+A continuation is a data structure of: a stack, a set of CPU register contents, and a program counter. It's a partial snapshot of a program. You create a continuation by sucking this information out of the machine, i.e. grabbing registers and making a complete copy of the stack. Then at any time in the future you could decide to invoke (or "reify") a continuation by copying its stack over the current one and restoring all of its register values. Then you have jumped back to what you were doing when the continuation was captured. It's like a time-machine except that it doesn't affect main memory or external devices, only the stack and registers (i.e. control flow.) 
+----------------------------------------------------------------------
+
+----------------------------------------------------------------------
+Say you're in the kitchen in front of the refrigerator, thinking about a
+sandwitch.  You take a continuation right there and stick it in your
+pocket.  Then you get some turkey and bread out of the refrigerator and
+make yourself a sandwitch, which is now sitting on the counter.  You
+invoke the continuation in your pocket, and you find yourself standing
+in front of the refrigerator again, thinking about a sandwitch.  But
+fortunately, there's a sandwitch on the counter, and all the materials
+used to make it are gone.  So you eat it. :-)
+----------------------------------------------------------------------
+
+
+----------------------------------------------------------------------
+__CPS continuation passing style__
+CPS is a programming style where no function is ever allowed to return. A function "A" must emulate returning by passing its would-be-return value to a continuation function that was passed into "A" as an explicit parameter. Thus, all function calls are tail calls, which means, all function calls are instances of "goto with parameters." 
+
+If a function "A" wants to call another function "B", "A" has to pass "B" a continuation "rest of A" that will receive the return value of "B" and then perform the rest of A's operations. If a function "A" wants to tail-call "B", it can simply pass "B" the same continuation that "A" itself received.
+
+CPS is useful from a theoretical standpoint because it gives you all the power of CallWithCurrentContinuation, while making a CallWithCurrentContinuation function unnecessary. All functions are called with their continuations. In fact, it is possible to write an automatic translator that converts functions from ordinary style into this style. 
+----------------------------------------------------------------------
+
+ Continuations Made Simple
+
+Traditionally a function returns a value. e.g.:
+
+def foo(x):
+        return x+1
+
+This leaves implicit where this value is to be returned to. The idea of continuations is to make this explicit by adding a continuation argument. Instead of `returning' the value, the function `continues' with the value by giving it as an argument to the continuation. In a continuation-based world, the above function foo becomes:
+
+def foo(x,c):
+    c(x+1)
+
+----------------------------------------------------------------------
+
+
+def lipy_if (context, args):
+
+    # (if <pred> <cons> <alt> )
+    (condition, (true_thunk, (false_thunk, tmp_nil))) = args
+
+    condition = lipy_eval(context, condition)
+
+    if ( condition == 'true' ):
+        return lipy_eval(context, true_thunk)
+    else:
+        return lipy_eval(context, false_thunk)
+
+
+def CPS_lipy_if (continuation, context, args):
+
+    (condition, (true_thunk, (false_thunk, tmp_nil))) = args
+
+    def inner_if( continuation , evaluated_args ):
+        ( evaluated_condition, tmp_nil) = evaluated_args
+        if ( evaluated_condition ):
+            lipy_eval(context, true_thunk)
+        else:
+            lipy_eval(context, false_thunk)
+
+    CPS_lipy_eval(inner_if, context, args[0])
+
+
+def CPS_lipy_eval(continuation, continuation, code):
+    if isinstance(code,str):
+        continuation(context.lookup(code))
+    elif isinstance(code,int):
+        continuation(code)
+    elif isinstance(code,list):
+        def inner_apply(continuation, funct):
+            funct.apply(continuation, context, code[1])
+        CPS_lipy_eval(inner_apply, context, code[0])
+    error()
+
+

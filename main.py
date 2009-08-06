@@ -77,6 +77,7 @@ def testall():
         ("( as . nd )" , "'(as.nd)" ),
         ("nil"         , "(display 'hello)"),
         ("nil"         , "(display2 'hello)"),
+        ("6"            , "((lambda (x) (+ x 1)) 5)"
         # -------------------------------------- Maths
         ("true"         , "(< 4 5)"),
         ("false"        , "(< 5 4)"),
@@ -128,6 +129,9 @@ def testall():
                                         (fib n2 (+ n1 n2) (+ cnt 1)))))
                                 (fib 0 1 0)))"""),
         ("55"         ,"(fibonacci 10)"),
+        # -------------------------------------- Quine
+# ("((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))",
+# "((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))"),
         # -------------------------------------- Done
         # ("nil"         , "(env)" ),
         ("nil"         , "()" )]
