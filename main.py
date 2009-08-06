@@ -168,7 +168,7 @@ def testall():
             print "  > result   ", res   
             print "-------------"
             
-testall()
+# testall()
 
 def testme(): 
     inp = """
@@ -177,6 +177,13 @@ def testme():
     (display KK)
     (callcc (lambda (jaaam) (set! KK jaaam)))
     (display KK)
+
+(define CC #f)
+(let ((i 0))
+        (call/cc (lambda (k) (set! CC k)))
+        (printf "~s~n" i)
+        (set! i (+ i 1)))
+(CC nil)
     """
 
     syms, vals = zip(*basic_environment)
@@ -184,21 +191,12 @@ def testme():
     for result in repl(env.extend([],[]),parse(tokenize([inp]))):
         print result
 
-# testme()
+testme()
 
 def main():
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
-    while(True):
-        print repl(env.extend([],[]),parse(tokenize(reader_raw())))
+    for result in repl(env.extend([],[]),parse(tokenize(reader_raw()))):
+        print result
 # main()
-
-
-
-# def main():
-#     syms, vals = zip(*basic_environment)
-#     env = environment(syms, vals)
-#     for result in repl(env,parse(tokenize(reader_raw()))):
-#         print result
-# # main()
 
