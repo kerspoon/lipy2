@@ -1,13 +1,6 @@
 
 from repl import eval_list, lipy_eval
-
-class function(object):
-    def __init__(self,func):
-        self.func = func
-
-    def apply(self, continuation, context, args):
-        continuation, result = self.func(continuation, context, args)
-        return continuation, result
+from trampoline import thunk
 
 def flatten(x):
     """flatten(sequence) -> list
@@ -34,46 +27,50 @@ def flatten(x):
             result.append(el)
     return result
 
-
 class procedure(object):
     def __init__(self, body, lipy_vars):
         self.body = body
         self.vars = lipy_vars
     
-    def apply(self, continuation, context, args):
+    def __call__(self, continuation, context, args):
+
+        def inner( evaled_args ):
+            # add the arguments to the environment in a new frame
+            context = context.extend(flatten(self.vars)[:-1], flatten(evaled_args)[:-1])
+
+            def inner2(result): 
+                return thunk(continuation)(result)
+
+            # evaluate the body in an extened environment
+            lipy_eval(context, self.body, inner2)
+
         # evaluate the arguments
-        continuation, args = eval_list(continuation, context, args)
-
-        # add the arguments to the environment in a new frame
-        context = context.extend(flatten(self.vars)[:-1], flatten(args)[:-1])
-
-        # evaluate the body in an extened environment
-        continuation, result = lipy_eval(continuation, context, self.body)
-
-        return continuation, result    
+        eval_list(context, args, inner)
 
 #Convert a python function into a form
 #suitable for the interpreter
 # TODO this should be a deccorator
+# it also should be refectored, lots of messy code
 def predefined_function(inputfunction):
     def func(continuation, context, args):
-        continuation, args = eval_list(continuation, context, args)
-        argList = []
-        while args != "nil":
-            arg, args = args
-            argList.append(arg)
-        result = inputfunction(*argList)
-        if result == None:
-            result = "nil"
-        return continuation, result
-    return function(func)
+        def inner(evaled_args):
+            argList = []
+            while evaled_args != "nil":
+                arg, evaled_args = evaled_args
+                argList.append(arg)
+            result = inputfunction(*argList)
+            if result == None:
+                result = "nil"
+            return thunk(continuation)(result)
+
+        eval_list(context, args, inner)
+    return func
 
 def display(continuation, context, args):
-    continuation, args = eval_list(continuation, context, args)
-    # print "FUNC display"
-    # print type(args[0]), args[0]
-    print args[0]
-    return continuation, "nil"
+    def inner (x):
+        print x[0]
+        return thunk(continuation)("nil")
+    eval_list(context, args, inner)
 
 def display2(arg):
     # print "FUNC display2"
@@ -91,8 +88,9 @@ def display2(arg):
 #   hi      <= (quote hi)
 #   (+ 3 4) <= (quote (+ 3 4))
 # -----------------------------------------------------------------------------
-def quote_func(continuation, context, args):
-    return continuation, args[0]
+
+def quote_func(context, args, continuation):
+    return thunk(continuation)(args[0])
 
 # -----------------------------------------------------------------------------
 # ASSIGNMENT
@@ -109,11 +107,11 @@ def quote_func(continuation, context, args):
 #   44  <= x
 # -----------------------------------------------------------------------------
 
-def set_func(continuation, context, args):
+def set_func(context, args, continuation):
     var = args[0]
     arg = args[1][0]
     context.set(var,arg)
-    return continuation, "set-ok"
+    return thunk(continuation)("set-ok")
 
 # -----------------------------------------------------------------------------
 # DEFINITION - done
@@ -132,18 +130,21 @@ def set_func(continuation, context, args):
 #   10 <= (add8 m)
 # -----------------------------------------------------------------------------
 
-def define_func(continuation, context, args):
+def define_func(context, args, continuation):
     if isinstance(args[0], str):
         (var,  (arg, tmp_nil)) = args 
         assert tmp_nil == "nil", "invalid args to define"
     else:
         ((var, lambda_vars), lambda_body) = args
         arg = ["lambda", [lambda_vars, lambda_body]]
-
     context.add(var, "define-in-progress")
-    continuation, result = lipy_eval(continuation,context,arg)
-    context.set(var, result)
-    return continuation, "define-ok"
+
+    def inner(result): 
+        print "inner", result
+        context.set(var, result)
+        return thunk(continuation)("define-ok")
+    print "define_func", args
+    lipy_eval(context, arg, inner)
 
 # -----------------------------------------------------------------------------
 # IF - done
@@ -160,15 +161,19 @@ def define_func(continuation, context, args):
 #   nil <= (if (= 2 3) 'boop)
 # -----------------------------------------------------------------------------
 
-def if_func(continuation, context, args):
-    continuation, result = lipy_eval(continuation, context, args[0])
-    if result == "true":
-        return lipy_eval(continuation, context, args[1][0])
-    else:
-        if args[1][1] == "nil":
-            return continuation, "nil"
+def if_func(context, args, continuation):
+    
+    (condition, (true_thunk, (false_thunk, tmp_nil))) = args
+    assert tmp_nil == "nil"
+
+    # inner_if :: sexp -> None
+    def inner_if(evaluated_args):
+        if ( evaluated_args == 'true' ):
+            return thunk(lipy_eval)(context, true_thunk, continuation)
         else:
-            return lipy_eval(continuation, context, args[1][1][0])
+            return thunk(lipy_eval)(context, false_thunk, continuation)
+
+    return thunk(lipy_eval)(context, condition, inner_if)
 
 # -----------------------------------------------------------------------------
 # LAMBDA - done
@@ -183,13 +188,13 @@ def if_func(continuation, context, args):
 #   222  <= ((lambda (x) (+ 111 x) 222) 333)
 # -----------------------------------------------------------------------------
 
-def lambda_func(continuation, context, args):   
+def lambda_func(context, args, continuation):   
     if args[0] == "nil":
         lipy_vars = "nil"
     else:
         lipy_vars = args[0]
     body = args[1]
-    return continuation, procedure(["begin", body], lipy_vars)
+    return thunk(continuation)(procedure(["begin", body], lipy_vars))
 
 # -----------------------------------------------------------------------------
 # BEGIN - done
@@ -205,20 +210,21 @@ def lambda_func(continuation, context, args):
 #   4   <= (begin (set! x 3) 4) // should change x
 # -----------------------------------------------------------------------------
 
-def begin_func(continuation, context, args):
-    continuation, res = lipy_eval(continuation, context, args[0])
-    if args[1] == "nil":
-        return continuation, res
-    # don't need to retuen the continuation here as 
-    # it is done inside the inner begin_func
-    return begin_func(continuation, context, args[1])
+def begin_func(context, args, continuation):
+
+    def inner(res):
+        if args[1] == "nil":
+            return thunk(continuation)(res)
+        return thunk(begin_func)(context, args[1], continuation)
+        
+    lipy_eval(context, args[0], inner)
 
 # -----------------------------------------------------------------------------
 
-def environment_func(continuation, context, args):
-    assert args == "nil"
-    print context
-    return continuation, "nil"
+# def environment_func(context, args, continuation):
+#     assert args == "nil"
+#     print context
+#     return continuation, "nil"
 
 def to_scm_bool(x):
     if x:
@@ -229,13 +235,13 @@ basic_environment = [
     ("nil", "nil"),
     ("true", "true"),
     ("false", "false"),
-    ("quote" , function(quote_func)),
-    ("set!"  , function(set_func)),
-    ("define", function(define_func)),
-    ("if"    , function(if_func)),
-    ("lambda", function(lambda_func)),
-    ("begin" , function(begin_func)),
-    ("display", function(display)),
+    ("quote" , quote_func),
+    ("set!"  , set_func),
+    ("define", define_func),
+    ("if"    , if_func),
+    ("lambda", lambda_func),
+    ("begin" , begin_func),
+    ("display", display),
     ("display2", predefined_function(display2)),
     ("+", predefined_function(lambda *args:sum(args))),
     ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
@@ -245,8 +251,7 @@ basic_environment = [
     ("=", predefined_function(lambda a, b:to_scm_bool(a == b))),
     ("cons", predefined_function(lambda a, b:[a, b])),
     ("car", predefined_function(lambda(a, b):a)),
-    ("cdr", predefined_function(lambda(a, b):b)),
-    ("env", function(environment_func))]
+    ("cdr", predefined_function(lambda(a, b):b))]
 
 # sexp_str, lipy_eval, call/cc, ^, environment
 
