@@ -1,5 +1,5 @@
 
-from parse import sexp_str
+from parse import sexp_str, lipy_string
 from trampoline import trampoline, thunk, identity
 
 DEBUG = False  
@@ -20,7 +20,7 @@ def lipy_eval(context, code, continuation):
     if isinstance(code,str):
         # print "lookup", code, "=", context.lookup(code)
         return thunk(continuation)(context.lookup(code))
-    elif isinstance(code,int):
+    elif isinstance(code,(int,lipy_string)):
         # print continuation, code 
         return thunk(continuation)(code)
     elif isinstance(code,list):

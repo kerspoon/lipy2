@@ -249,6 +249,7 @@ def callcc_func(context, args, continuation):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+
 # def environment_func(context, args, continuation):
 #     assert args == "nil"
 #     print context

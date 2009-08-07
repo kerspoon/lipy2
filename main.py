@@ -135,6 +135,10 @@ def testall():
         # -------------------------------------- Quine
 # ("((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))",
 # "((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))"),
+        # -------------------------------------- String
+        ('"jam"'      , '"jam"'),
+        ('"jam"'      , '(car (cons "jam" "spoon"))'),
+        ('"jam"'      , '\'"jam"'),
         # -------------------------------------- Done
         # ("nil"         , "(env)" ),
         ("nil"         , "()" )]
@@ -143,7 +147,7 @@ def testall():
     env = environment(syms, vals)
     env = env.extend([],[])
 
-    DEBUG = True
+    DEBUG = False
 
     for n, (expected, inp) in enumerate(to_test):
         if DEBUG: print "----"
@@ -168,7 +172,7 @@ def testall():
             print "  > result   ", res   
             print "-------------"
             
-# testall()
+testall()
 
 def testme(): 
     inp = """
@@ -201,7 +205,7 @@ def testme():
     for result in repl(env.extend([],[]),parse(tokenize([inp]))):
         print "$", result
 
-testme()
+# testme()
 
 def main():
     syms, vals = zip(*basic_environment)

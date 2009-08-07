@@ -2,6 +2,14 @@
 import re
 import string  
 
+class lipy_string(object):
+    def __init__(self,text):
+        self.text = text
+    def __str__(self):
+        return self.text
+    def __len__(self):
+        return len(self.text)
+        
 # todo make sure it only accepts valid chars
 
 class iterator_undo(object):   # undo-able iterator wrapper
@@ -98,6 +106,8 @@ def inner_parse(tokens):
 
     if tok == "'":
         return ["quote", [inner_parse(tokens), "nil"]]
+    elif tok[0] == '"':
+        return lipy_string(tok[1:-1])
     elif tok == "(":
         tok = tokens.next()
 
@@ -142,12 +152,14 @@ def sexp_str(sexp):
             assert(len(sexp)==2), "lists (cons pairs) must only have 2 elements"
             text += sexp_str(sexp[0]) + " "
             sexp = sexp[1]
-        assert isinstance(sexp,(str,int)), "must be str, int or list"
+        assert isinstance(sexp,(str,int,lipy_string)), "must be str, int or list"
         assert isinstance(sexp,int) or len(sexp) != 0, "zero sized token"
 
         if sexp != "nil":
             text += ". " + sexp_str(sexp) + " "
         text += ")"
+    elif isinstance(sexp,lipy_string):
+        text += '"' + str(sexp) + '"'
     elif isinstance(sexp,str):
         assert set(sexp).issubset(normalchars), "invalid atom in symbol" + sexp
         text += sexp
@@ -155,41 +167,45 @@ def sexp_str(sexp):
         text += str(sexp)
     else:
         print type(sexp), str(sexp)
-        raise Exception("must be str, int or list")
+        raise Exception("must be str, int, quoted string or list")
     return text 
 
 def test():
     from lex import tokenize
 
-    to_process = [ ("()"        , "nil"),
-                   ("'()", None),
-                   ("'a", None),
-                   ("'( a b)", None),
-                   ("()", None),
-                   ("(a)", None),
-                   ("('a)", None),
-                   ("(a b)", None),
-                   ("(a b c)", None),
-                   ("(a b c d e f (g) h (i j) k (l m n) o (p q (r s) t) u (v (w (x (y (z))))))", None),
-                   ("(a . b)", None),
-                   ("(a b . c)", None),
-                   ("(() (()()))", None)]
+    to_process = [ 
+        ("()"        , "nil"),
+        ("'()"       , "( quote nil )"),
+        ("'a"        , "( quote a )"),
+        ("'( a b)"   , "( quote ( a b ) )"),
+        ("()"        , "nil"),
+        ("(a)"       , "( a )"),
+        ("('a)"      , "( ( quote a ) )"),
+        ("(a b)"     , "( a b )"),
+        ("(a b c)"   , "( a b c )"),
+        ("(a b c d e f (g) h (i j) k (l m n) o (p q (r s) t) u (v (w (x (y (z))))))", 
+         "( a b c d e f ( g ) h ( i j ) k ( l m n ) o ( p q ( r s ) t ) u ( v ( w ( x ( y ( z ) ) ) ) ) )"),
+        ("(a . b)"   , "( a . b )"),
+        ("(a b . c)" , "( a b . c )"),
+        ('"asdf"'    , '"asdf"'), 
+        ('("asdf")'    , '( "asdf" )'), 
+        ('(4"asdf")'   , '( 4 "asdf" )'), 
+        ('(4."asdf")'   , '( 4 . "asdf" )'), 
+        ('"as df"'    , '"as df"'), 
+        ("(() (()()))", "( nil ( nil nil ) )")]
     
     for test, expected in to_process:
-        print "----"
-        print "test    :", test
-        print "expected:", expected
+
         tokens = tokenize([test])
         result = list(parse(tokens))
+        assert len(result) == 1
+        res = sexp_str(result[0])
+        if res != expected:
+            print "Mismatch"
+            print "test    :", test
+            print "result  :", res
+            print "expected:", expected
 
-        print "result  :", 
-        for sexp in result:
-            print sexp,
-        print 
-        print "printed :", 
-        for x in result:
-            print sexp_str(x),
-        print 
 
-# test()
+test()
 

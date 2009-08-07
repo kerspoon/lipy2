@@ -1,5 +1,6 @@
 
 import string 
+import re
 
 test_list = []
 
@@ -9,21 +10,24 @@ normalchars = set(atoms)
 
 # -----------------------------------------------------------------------------
 
-def readtoken(nninput):
-    tok = []
-    ninput = nninput.lstrip()
-    for x in ninput:
-        if x in specialtokens:
-            if len(tok) == 0: 
-                tok = [x]
-            break
-        elif x in normalchars:
-            tok.append(x)
-        elif x in string.whitespace:
-            break
-        else:
-            assert False, "invalid input"
-    return "".join(tok), ninput[len(tok):].rstrip()
+
+
+def readtoken(text):
+    text = text.strip()
+
+    assert len(text) != 0, "invalid input"
+
+    if text[0] in specialtokens:
+        return text[0], text[1:]
+
+    pattern = re.compile("([()'.]|[\w<>%=!^&?*+/-]+|\"[\w\s<>%=!^&?*+/-]+\")")
+    result = pattern.match(text)
+    
+    assert result, "invalid input"
+    if result.end() == len(text):
+        return result.group(), ""
+
+    return result.group() , text[result.end():]
 
 def readtokens(text):
     res = []
@@ -35,7 +39,7 @@ def readtokens(text):
 def test_readtoken():
     print "testing: readtoken"
     assert readtoken("hello") == ('hello', "")
-    assert readtoken("") == ('', '')
+    # assert readtoken("") == ('', '')
     assert readtoken(atoms) == (atoms, "")
     assert readtoken("  spoone") == ('spoone', "")
     assert readtoken("(as") == ('(', "as")
