@@ -283,6 +283,8 @@ basic_environment = [
     ("<", predefined_function(lambda a, b:to_scm_bool(a < b))),
     (">", predefined_function(lambda a, b:to_scm_bool(a > b))),
     ("=", predefined_function(lambda a, b:to_scm_bool(a == b))),
+    ("<=", predefined_function(lambda a, b:to_scm_bool(a <= b))),
+    (">=", predefined_function(lambda a, b:to_scm_bool(a >= b))),
     ("cons", predefined_function(lambda a, b:[a, b])),
     ("car", predefined_function(lambda(a, b):a)),
     ("cdr", predefined_function(lambda(a, b):b))]
