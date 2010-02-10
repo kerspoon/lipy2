@@ -1,6 +1,6 @@
 
 from lex import tokenize
-from parse import parse, sexp_str
+from parse import parse
 from environment import environment
 from function import basic_environment
 from repl import repl
@@ -47,6 +47,8 @@ def testall():
         ("10"        , "(add8 m)" ),
         ("1001"      , "(mac 1 10 100)" ),
         ("y"         , "(if true 'y 'n)" ),
+        ("y"         , "(if true 'y)" ),
+        ("nil"       , "(if false 'y)" ),
         ("5"         , "(if (= 2 3) (- 3) (+ 2 3) )" ),
         # ("#PROC"     , "(lambda (z) (+ 3 z))" ),
         ("13"        , "((lambda (z) (+ 3 z)) 10)" ),
@@ -176,6 +178,14 @@ testall()
 
 def testme(): 
     inp = """
+    (define list (lambda args args))
+    (define when (mac body 
+       (list 'if (car body) (cons 'begin (cdr body)))))
+    (define a 4)
+    (when (= a 4) 'hello)
+"""
+
+    inp2 = """
     (define MM false)
     (callcc (lambda (k) 6))
     (display MM)
@@ -205,7 +215,7 @@ def testme():
     for result in repl(env.extend([],[]),parse(tokenize([inp]))):
         print "$", result
 
-# testme()
+testme()
 
 def main():
     syms, vals = zip(*basic_environment)

@@ -1,6 +1,7 @@
 
 from repl import eval_list, lipy_eval
 from trampoline import thunk
+from parse import sexp_str
 
 def flatten(x):
     """flatten(sequence) -> list
@@ -35,8 +36,25 @@ class procedure(object):
     def __call__(self, context, args, continuation):
         # print "procedure", self, args
         def call_inner( evaled_args ):
-            # add the arguments to the environment in a new frame
-            newcontext = context.extend(flatten(self.vars)[:-1], flatten(evaled_args)[:-1])
+
+            # print "vars", self.vars
+            # print "args", evaled_args
+
+            if self.vars == "nil":
+                newcontext = context
+
+            elif isinstance(self.vars, str):
+                # print "ypu"
+                newcontext = context.extend(
+                    [self.vars], 
+                    [evaled_args])
+
+            elif isinstance(self.vars, list):
+
+                # add the arguments to the environment in a new frame
+                newcontext = context.extend(
+                    flatten(self.vars)[:-1], 
+                    flatten(evaled_args)[:-1])
 
             def call_inner2(result): 
                 return thunk(continuation)(result)
@@ -46,6 +64,49 @@ class procedure(object):
 
         # evaluate the arguments
         return thunk(eval_list)(context, args, call_inner)
+
+
+class macro(object):
+    def __init__(self, body, lipy_vars):
+        self.body = body
+        self.vars = lipy_vars
+        print "created a macro!"
+        print "vars", self.vars
+
+    def __call__(self, context, args, continuation):
+        # add the arguments to the environment in a new frame
+
+        print "vars", sexp_str(self.vars)
+        print "args", sexp_str(args)
+        print "body", sexp_str(self.body)
+
+        if self.vars == "nil":
+            newcontext = context
+
+        elif isinstance(self.vars, str):
+            newcontext = context.extend(
+                [self.vars], 
+                [args])
+
+        elif isinstance(self.vars, list):
+
+            # add the arguments to the environment in a new frame
+            newcontext = context.extend(
+                flatten(self.vars)[:-1], 
+                flatten(args)[:-1])
+
+        def call_inner(expanded_macro):
+            print "expanded macro", sexp_str(expanded_macro)
+
+            def call_inner2(result):
+                print "call_inner2", result
+                return thunk(continuation)(result)
+
+            return thunk(lipy_eval)(newcontext, expanded_macro, call_inner2)
+
+        # evaluate the body in an extened environment
+        return thunk(lipy_eval)(newcontext, self.body[0], call_inner)
+
 
 #Convert a python function into a form
 #suitable for the interpreter
@@ -112,7 +173,7 @@ def set_func(context, args, continuation):
     arg = args[1][0]
 
     def set_func_inner(evaled_arg):
-        context.set(var,evaled_arg)
+        context.set(var, evaled_arg)
         return thunk(continuation)("set-ok")
 
     return thunk(lipy_eval)(context, arg, set_func_inner)
@@ -168,8 +229,11 @@ def define_func(context, args, continuation):
 
 def if_func(context, args, continuation):
     
-    (condition, (true_thunk, (false_thunk, tmp_nil))) = args
-    assert tmp_nil == "nil"
+    (condition, (true_thunk, false_thunk)) = args
+
+    if false_thunk != "nil":
+        (false_thunk, tmp_nil) = false_thunk
+        assert tmp_nil == "nil"
 
     # inner_if :: sexp -> None
     def inner_if(evaluated_args):
@@ -194,10 +258,7 @@ def if_func(context, args, continuation):
 # -----------------------------------------------------------------------------
 
 def lambda_func(context, args, continuation):   
-    if args[0] == "nil":
-        lipy_vars = "nil"
-    else:
-        lipy_vars = args[0]
+    lipy_vars = args[0]
     body = args[1]
     return thunk(continuation)(procedure(["begin", body], lipy_vars))
 
@@ -249,6 +310,11 @@ def callcc_func(context, args, continuation):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+def macro_func(context, args, continuation):
+    return thunk(continuation)(macro(args[1], args[0]))
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # def environment_func(context, args, continuation):
 #     assert args == "nil"
@@ -274,6 +340,7 @@ basic_environment = [
     ("lambda", lambda_func),
     ("begin" , begin_func),
     ("callcc", callcc_func),
+    ("mac", macro_func),
     ("display", display),
     ("display2", predefined_function(display2)),
     ("newline", predefined_function(newline_func)),
