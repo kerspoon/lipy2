@@ -15,7 +15,7 @@ normalchars = set(atoms)
 def readtoken(text):
     text = text.strip()
 
-    assert len(text) != 0, "invalid input"
+    assert len(text) != 0, "invalid input: '" + text + "'"
 
     if text[0] in specialtokens:
         return text[0], text[1:]
@@ -23,7 +23,7 @@ def readtoken(text):
     pattern = re.compile("([()'.]|[\w<>%=!^&?*+/-]+|\"[\w\s<>%=!^&?*+/-]+\")")
     result = pattern.match(text)
     
-    assert result, "invalid input"
+    assert result, "invalid input: '" + text + "'"
     if result.end() == len(text):
         return result.group(), ""
 

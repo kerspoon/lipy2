@@ -44,7 +44,6 @@ class procedure(object):
                 newcontext = context
 
             elif isinstance(self.vars, str):
-                # print "ypu"
                 newcontext = context.extend(
                     [self.vars], 
                     [evaled_args])
@@ -70,15 +69,13 @@ class macro(object):
     def __init__(self, body, lipy_vars):
         self.body = body
         self.vars = lipy_vars
-        print "created a macro!"
-        print "vars", self.vars
 
     def __call__(self, context, args, continuation):
         # add the arguments to the environment in a new frame
 
-        print "vars", sexp_str(self.vars)
-        print "args", sexp_str(args)
-        print "body", sexp_str(self.body)
+        # print "vars", sexp_str(self.vars)
+        # print "args", sexp_str(args)
+        # print "body", sexp_str(self.body)
 
         if self.vars == "nil":
             newcontext = context
@@ -99,7 +96,6 @@ class macro(object):
             print "expanded macro", sexp_str(expanded_macro)
 
             def call_inner2(result):
-                print "call_inner2", result
                 return thunk(continuation)(result)
 
             return thunk(lipy_eval)(newcontext, expanded_macro, call_inner2)
@@ -316,6 +312,8 @@ def macro_func(context, args, continuation):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+
+
 # def environment_func(context, args, continuation):
 #     assert args == "nil"
 #     print context
@@ -344,6 +342,7 @@ basic_environment = [
     ("display", display),
     ("display2", predefined_function(display2)),
     ("newline", predefined_function(newline_func)),
+    ("is", predefined_function(lambda x, y: to_scm_bool(x is y))),
     ("+", predefined_function(lambda *args:sum(args))),
     ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
     ("-", predefined_function(lambda a, b:a - b)),

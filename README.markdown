@@ -20,6 +20,13 @@ This is converted into a python **list** or a **str**. Which can be printed back
 ToDo
 ====
 
+  - allow define to take variable args 
+
+      (define (name) body) # zero
+      (define (name arg1 arg2) body) # exactly 2
+      (define (name . args) body) # zero or more
+      (define (name arg1 . args) body) # one or more
+
   - call with current continuation display bug
   - strings
     + allow functions and lambdas to be printed
@@ -39,7 +46,42 @@ ToDo
 Things to add
 ==============
 
-^ / * eq equal <> not and or read 
+^ / * eq equal <> not and or read assert
+
+(define (max xs) (xs,  reduce (pick >)))
+(define (min xs) (xs,  reduce (pick <)))
+(define (sum xs)         (xs, reduce +  ))
+(define (product xs)     (xs, reduce *  ))
+(define (and xs)         (xs, reduce && ))
+(define (or  xs)         (xs, reduce || ))
+
+
+
+(define (length xs) 
+  (xs,  inject
+        0 
+        (lambda(x y) + x 1)))
+(define (reverse xs)
+  (xs,  inject
+        '()
+        (flip cons)))
+(define (map f xs)
+  (xs,  foldr
+        (lambda(x y) cons (f x) y)
+        '()))
+(define (filter f xs)
+  (xs,  foldr
+        (lambda(x y) if (f x) (cons x y) y)
+        '()))
+
+(define quick-sort (lambda(xs) 
+  if  (xs, null)
+      '()
+      (concat (concat (((xs, cdr), filter (curry >= (xs, car))), quick-sort)
+      (list (xs, car)))
+              (((xs, cdr), filter (curry < (xs, car))), quick-sort))))
+
+
 
 Proposed Syntax
 ===============

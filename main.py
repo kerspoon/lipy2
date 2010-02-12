@@ -217,10 +217,19 @@ def testme():
 
 testme()
 
+def read_file(stream, env):
+
+    for result in repl(env, parse(tokenize(iter(stream)))):
+        print result
+
 def main():
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
+
+    with open("prelude.scm") as prelude:
+        read_file(prelude, env)
+
     for result in repl(env.extend([],[]),parse(tokenize(reader_raw()))):
         print result
-# main()
+main()
 
