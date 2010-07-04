@@ -1,205 +1,8 @@
-
-from repl import eval_list, lipy_eval
-from trampoline import thunk
-from parse import sexp_str
-
-def flatten(x):
-    """flatten(sequence) -> list
-
-    Returns a single, flat list which contains all elements retrieved
-    from the sequence and all recursively contained sub-sequences
-    (iterables).
-
-    Examples:
-    >>> [1, 2, [3,4], (5,6)]
-    [1, 2, [3, 4], (5, 6)]
-    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, MyVector(8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
-    
-    http://kogs-www.informatik.uni-hamburg.de/~meine/python_tricks
-    """
-
-    result = []
-    for el in x:
-        #if isinstance(el, (list, tuple)):
-        if hasattr(el, "__iter__") and not isinstance(el, basestring):
-            result.extend(flatten(el))
-        else:
-            result.append(el)
-    return result
-
-class procedure(object):
-    def __init__(self, body, lipy_vars):
-        self.body = body
-        self.vars = lipy_vars
-    
-    def __call__(self, context, args, continuation):
-        # print "procedure", self, args
-        def call_inner( evaled_args ):
-
-            # print "vars", self.vars
-            # print "args", evaled_args
-
-            if self.vars == "nil":
-                newcontext = context
-
-            elif isinstance(self.vars, str):
-                newcontext = context.extend(
-                    [self.vars], 
-                    [evaled_args])
-
-            elif isinstance(self.vars, list):
-
-                # add the arguments to the environment in a new frame
-                newcontext = context.extend(
-                    flatten(self.vars)[:-1], 
-                    flatten(evaled_args)[:-1])
-
-            def call_inner2(result): 
-                return thunk(continuation)(result)
-
-            # evaluate the body in an extened environment
-            return thunk(lipy_eval)(newcontext, self.body, call_inner2)
-
-        # evaluate the arguments
-        return thunk(eval_list)(context, args, call_inner)
-
-
-class macro(object):
-    def __init__(self, body, lipy_vars):
-        self.body = body
-        self.vars = lipy_vars
-
-    def __call__(self, context, args, continuation):
-        # add the arguments to the environment in a new frame
-
-        # print "vars", sexp_str(self.vars)
-        # print "args", sexp_str(args)
-        # print "body", sexp_str(self.body)
-
-        if self.vars == "nil":
-            newcontext = context
-
-        elif isinstance(self.vars, str):
-            newcontext = context.extend(
-                [self.vars], 
-                [args])
-
-        elif isinstance(self.vars, list):
-
-            # add the arguments to the environment in a new frame
-            newcontext = context.extend(
-                flatten(self.vars)[:-1], 
-                flatten(args)[:-1])
-
-        def call_inner(expanded_macro):
-            print "expanded macro", sexp_str(expanded_macro)
-
-            def call_inner2(result):
-                return thunk(continuation)(result)
-
-            return thunk(lipy_eval)(newcontext, expanded_macro, call_inner2)
-
-        # evaluate the body in an extened environment
-        return thunk(lipy_eval)(newcontext, self.body[0], call_inner)
-
-
-class ScmClass(object):
-    
-    def __init__(self, parents, parameters, slots):
-        
-        # something can't be both a parameter and a slot
-        assert set(parameters).isdisjoint(set(slots))
-
-        # gather all super-classes and make unique
-        self.parents = set(list(parents))
-        for parent in parents:
-            self.parents |= parent.parents
-
-        # make sure they are unique
-        self.slots = set(list(slots))
-
-        # parameters are anything passed in and
-        # anything in superclass parameters & superclass slots.
-        # except the ones that are slots in this class
-        # they are start as nil
-        self.parameters = {}
-
-        for p in parameters:
-            self.parameters[p] = "nil"
-
-        for sc in self.parents:
-            for s in sc.slots:
-                if s not in self.slots:
-                    self.parameters[s] = "nil"
-
-            for p,v in sc.parameters.items():
-                    self.parameters[p] = v
-
-
-        print "make class:"
-        print "\tparents", self.parents
-        print "\tparameters", self.parameters
-        print "\tslots", self.slots
-
-    def __call__(self, context, args, continuation):
-
-        print "call class:"
-        print "\targs", args
-
-        def call_inner (evaled_param_name):
-
-            param = self.parameters[evaled_param_name]
-
-            # return as data when only one arg
-            # todo: change this to `if callable`
-            if args[1] is "nil": 
-                return thunk(continuation)(param)
-        
-            # call as function with `self` and the rest of args
-
-            def call_inner2(result):
-                return thunk(continuation)(result)
-
-            new_args = [self, args[1]]
-            return thunk(param)(context, new_args, call_inner2)
-
-        # evaluate parameter name
-        return thunk(lipy_eval)(context, args[0], call_inner)
-
-base_class = ScmClass(set(), set(), set())
-
-#Convert a python function into a form
-#suitable for the interpreter
-# TODO this should be a deccorator
-# it also should be refectored, lots of messy code
-def predefined_function(inputfunction):
-    def func(context, args, continuation):
-        def predefined_function_inner(evaled_args):
-            argList = []
-            while evaled_args != "nil":
-                arg, evaled_args = evaled_args
-                argList.append(arg)
-            result = inputfunction(*argList)
-            if result == None:
-                result = "nil"
-            return thunk(continuation)(result)
-        return thunk(eval_list)(context, args, predefined_function_inner)
-    return func
-
-def display(context, args, continuation):
-    def display_inner(x):
-        print x[0]
-        return thunk(continuation)("nil")
-    return thunk(eval_list)(context, args, display_inner)
-
-def display2(arg):
-    # print "FUNC display2"
-    # print type(arg), arg
-    print arg
+from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger
+from environment import Environment
 
 # -----------------------------------------------------------------------------
-# QUOTE - done
+# QUOTE
 # 
 # (quote <exp>)
 # 
@@ -210,8 +13,11 @@ def display2(arg):
 #   (+ 3 4) <= (quote (+ 3 4))
 # -----------------------------------------------------------------------------
 
-def quote_func(context, args, continuation):
-    return thunk(continuation)(args[0])
+def quote_func(args, env):
+    args = to_list(args)
+    assert args[-1] is nil
+    assert len(args) == 2
+    return args[0]
 
 # -----------------------------------------------------------------------------
 # ASSIGNMENT
@@ -228,22 +34,26 @@ def quote_func(context, args, continuation):
 #   44  <= x
 # -----------------------------------------------------------------------------
 
-def set_func(context, args, continuation):
+def set_func(args, env):
+    args = to_list(args)
+    assert args[-1] is nil
+    assert len(args) == 3
 
     var = args[0]
-    arg = args[1][0]
+    arg = args[1]
 
-    def set_func_inner(evaled_arg):
-        context.set(var, evaled_arg)
-        return thunk(continuation)("set-ok")
+    assert isinstance(var, LispSymbol)
 
-    return thunk(lipy_eval)(context, arg, set_func_inner)
-    
+    evaled_arg = arg.scm_eval(env)
+    env.set(var.name, evaled_arg)
+    return nil
+
 # -----------------------------------------------------------------------------
-# DEFINITION - done
+# DEFINITION
 # 
 # 1. (define <var> <value>)
-# 2. (define (<var> <param1> ... <paramN> ) <body> )
+# 2. (define (<var> <param1> ... <paramN> ) <body1> ... )
+# 2. (define (<var> . <param1> ) <body1> ... )
 # 
 # 1. Add <var> to the environment with the value eval(<value>).
 # 2. Convert the second form to define a lambda expression.
@@ -256,27 +66,41 @@ def set_func(context, args, continuation):
 #   10 <= (add8 m)
 # -----------------------------------------------------------------------------
 
-def define_func(context, args, continuation):
-    if isinstance(args[0], str):
-        (var,  (arg, tmp_nil)) = args 
-        assert tmp_nil == "nil", "invalid args to define"
+def define_func(args, env):
+
+    if isinstance(first(args), LispSymbol):
+        # we have the first form
+
+        args = to_list(args)
+        assert args[-1] is nil
+        assert len(args) == 3
+
+        var = args[0]
+        value = args[1]
+
+    elif isinstance(first(args), LispPair):
+        # we have the second form
+
+        var = first(first(args))
+        param = rest(first(args))
+        body = rest(args)
+
+        assert isinstance(var, (LispSymbol, LispPair))
+
+        value = from_list([mksym("lambda"), param, body])
     else:
-        ((var, lambda_vars), lambda_body) = args
-        arg = ["lambda", [lambda_vars, lambda_body]]
-    context.add(var, "define-in-progress")
+        raise Exception("invalid form")
 
-    def define_func_inner(result): 
-        # print "inner", result
-        context.set(var, result)
-        return thunk(continuation)("define-ok")
-
-    # print "define_func", args
-    return thunk(lipy_eval)(context, arg, define_func_inner)
+    assert isinstance(var, LispSymbol)
+    result = value.scm_eval(env)
+    env.add(var.name, result)
+    return nil
 
 # -----------------------------------------------------------------------------
-# IF - done
+# IF
 # 
 # (if <pred> <cons> <alt> )
+# (if <pred> <cons> )
 # 
 # evaluate the predicate. If it's true then
 # evaluate the consequence, otherwise
@@ -288,27 +112,28 @@ def define_func(context, args, continuation):
 #   nil <= (if (= 2 3) 'boop)
 # -----------------------------------------------------------------------------
 
-def if_func(context, args, continuation):
+def if_func(args, env):
+
+    args = to_list(args)
+    assert args[-1] is nil
+    assert 3 <= len(args) <= 4
     
-    (condition, (true_thunk, false_thunk)) = args
+    predicate   = args[0]
+    consequence = args[1]
+    alternative = args[2]
 
-    if false_thunk != "nil":
-        (false_thunk, tmp_nil) = false_thunk
-        assert tmp_nil == "nil"
+    result = predicate.scm_eval(env)
 
-    # inner_if :: sexp -> None
-    def inner_if(evaluated_args):
-        if ( evaluated_args == 'true' ):
-            return thunk(lipy_eval)(context, true_thunk, continuation)
-        else:
-            return thunk(lipy_eval)(context, false_thunk, continuation)
-
-    return thunk(lipy_eval)(context, condition, inner_if)
+    if result is true:
+        return consequence.scm_eval(env)
+    else:
+        return alternative.scm_eval(env)
 
 # -----------------------------------------------------------------------------
-# LAMBDA - done
+# LAMBDA
 # 
-# (lambda (<param1> ... <paramN>) <body> )
+# (lambda (<param1> ... <paramN>) <body1> ... )
+# (lambda <param> <body1> ... )
 # 
 # make a procedure.
 # 
@@ -318,13 +143,15 @@ def if_func(context, args, continuation):
 #   222  <= ((lambda (x) (+ 111 x) 222) 333)
 # -----------------------------------------------------------------------------
 
-def lambda_func(context, args, continuation):   
-    lipy_vars = args[0]
-    body = args[1]
-    return thunk(continuation)(procedure(["begin", body], lipy_vars))
+def lambda_func(args, env):
+
+    param = first(args)
+    body = rest(args)
+
+    return LispLambda(param, body)
 
 # -----------------------------------------------------------------------------
-# BEGIN - done
+# BEGIN 
 # 
 # (begin <exp1> ... <expN>)
 # 
@@ -337,143 +164,88 @@ def lambda_func(context, args, continuation):
 #   4   <= (begin (set! x 3) 4) // should change x
 # -----------------------------------------------------------------------------
 
-def begin_func(context, args, continuation):
+def begin_func(args, env):
 
-    def begin_func_inner(res):
-        if args[1] == "nil":
-            return thunk(continuation)(res)
-        return thunk(begin_func)(context, args[1], continuation)
-        
-    return thunk(lipy_eval)(context, args[0], begin_func_inner)
+    args = to_list(args)
+    assert args[-1] is nil, "invalid args for 'begin': %s" % args
+    assert len(args) >= 2, "invalid args for 'begin': %s" % args
 
-# -----------------------------------------------------------------------------
-# call/cc - done
-# 
-# (call/cc <lambda_exp>)
-# 
-# call the lambda_exp with the paremeter of the current continuation
-# 
-# -----------------------------------------------------------------------------
+    for arg in args[:-1]:
+        result = arg.scm_eval(env)
+    return result
 
-def callcc_func(context, args, continuation):
-    stored_cont = continuation
-    def callable_continuation(context, args, continuation2):
-        def callable_continuation_inner(arggg):
-            return thunk(stored_cont)(arggg)
-        return thunk(eval_list)(context, args, callable_continuation_inner)
-
-    def callcc_func_inner(func):
-        xx = ["quote", [callable_continuation, "nil"]]
-        return thunk(func)(context, [xx, "nil"] , continuation)
-
-    return thunk(lipy_eval)(context, args[0], callcc_func_inner)
-
-# -----------------------------------------------------------------------------
-# class
-# 
-# (class (<parent1> ...) (slot1 ...) (parameter1 ...))
-# 
-# create a new class
-# 
-# -----------------------------------------------------------------------------
-
-def class_func(context, args, continuation):
-    params = flatten(args[1][0])[:-1]
-    slots = flatten(args[1][1][0])[:-1]
-
-    # parents ['base-class']
-    # parameters ['x', 'y']
-    # slots ['add', 'length', 'angle', 'mag']
-    
-    def call_inner_class(evaluated_parents):
-        parents = evaluated_parents[:-1]
-        return thunk(continuation)(ScmClass(parents, params, slots))
-
-    # evaluate the arguments
-    return thunk(eval_list)(context, args[0], call_inner_class)
-
-# -----------------------------------------------------------------------------
-# set-slot!
-# 
-# (set-slot! <class-name> <param-name> <value>)
-# 
-# change the value of `slot` in `class` to `value`.
-# 
-# -----------------------------------------------------------------------------
-
-def set_slot_func(context, args, continuation):
-    
-    class_name = args[0]
-    param_name = args[1][0]
-    value = args[1][1][0]
-
-    def call_inner(evaled_class):
-
-        def call_inner2(evaled_val):
-            evaled_class.parameters[param_name] = evaled_val
-            return thunk(continuation)("set-slot-ok")
-    
-        return thunk(lipy_eval)(context, value, call_inner2)
-
-    return thunk(lipy_eval)(context, class_name, call_inner)
-    
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-def macro_func(context, args, continuation):
-    return thunk(continuation)(macro(args[1], args[0]))
-
-# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-
-
-# def environment_func(context, args, continuation):
-#     assert args == "nil"
-#     print context
-#     return continuation, "nil"
+def predefined_function(inputfunction):
+    def func(args, env):
+        evaled_args = [arg.scm_eval(env) for arg in to_list(args)][:-1]
+        result = inputfunction(*evaled_args)
+        if result == None: result = nil
+        return result
+    return func
 
 def to_scm_bool(x):
-    if x:
-        return "true"
-    return "false"
+    if x: return true
+    else: return false
 
-def newline_func():
-    print ""
+def two_integer_function(inputfunction):
+    def func(args, env):
+        evaled_args = [arg.scm_eval(env) for arg in to_list(args)][:-1]
 
-basic_environment = [
-    ("nil", "nil"),
-    ("true", "true"),
-    ("false", "false"),
-    ("quote" , quote_func),
-    ("set!"  , set_func),
-    ("define", define_func),
-    ("if"    , if_func),
-    ("lambda", lambda_func),
-    ("begin" , begin_func),
-    ("callcc", callcc_func),
-    ("mac", macro_func),
-    ("display", display),
-    ("display2", predefined_function(display2)),
-    ("newline", predefined_function(newline_func)),
-    ("is", predefined_function(lambda x, y: to_scm_bool(x is y))),
-    ("+", predefined_function(lambda *args:sum(args))),
-    ("*", predefined_function(lambda *args:reduce(int.__mul__, args))),
-    ("-", predefined_function(lambda a, b:a - b)),
-    ("<", predefined_function(lambda a, b:to_scm_bool(a < b))),
-    (">", predefined_function(lambda a, b:to_scm_bool(a > b))),
-    ("=", predefined_function(lambda a, b:to_scm_bool(a == b))),
-    ("<=", predefined_function(lambda a, b:to_scm_bool(a <= b))),
-    (">=", predefined_function(lambda a, b:to_scm_bool(a >= b))),
-    ("cons", predefined_function(lambda a, b:[a, b])),
-    ("car", predefined_function(lambda(a, b):a)),
-    ("cdr", predefined_function(lambda(a, b):b)),
+        assert len(evaled_args) == 2
+        assert isinstance(evaled_args[0], LispInteger)
+        assert isinstance(evaled_args[1], LispInteger)
+        result = inputfunction(evaled_args[0].num, evaled_args[1].num)
+        if isinstance(result, int):
+            result = LispInteger(result)
+        return result
+    return func
 
-    ("base-class", base_class),
-    ("class", class_func),
-    ("set-slot!", set_slot_func)]
+def display(text):
+    print text
 
-# sexp_str, lipy_eval, call/cc, ^, environment
+# -----------------------------------------------------------------------------
 
+def make_basic_environment():
     
+    basic = [
+        ("nil"   , nil),
+        ("true"  , true),
+        ("false" , false),
+        ("quote" , quote_func),
+        ("set!"  , set_func),
+        ("define", define_func),
+        ("if"    , if_func),
+        ("lambda", lambda_func),
+        ("begin" , begin_func),
+
+        ("display", predefined_function(lambda a: display(str(a)))),
+        ("newline", predefined_function(lambda a: display("\n"))),
+
+        ("cons", predefined_function(lambda a, b: cons(a, b))),
+        ("car" , predefined_function(lambda(a): first(a))),
+        ("cdr" , predefined_function(lambda(a): rest(a))),
+        ("is"  , predefined_function(lambda x, y: to_scm_bool(x is y))),
+
+        ("+",  two_integer_function(lambda a, b: a + b)),
+        ("*",  two_integer_function(lambda a, b: a * b)),
+        ("-",  two_integer_function(lambda a, b: a - b)),
+        ("<",  two_integer_function(lambda a, b:to_scm_bool(a < b))),
+        (">",  two_integer_function(lambda a, b:to_scm_bool(a > b))),
+        ("=",  two_integer_function(lambda a, b:to_scm_bool(a == b))),
+        ("<=", two_integer_function(lambda a, b:to_scm_bool(a <= b))),
+        (">=", two_integer_function(lambda a, b:to_scm_bool(a >= b)))]
+
+    syms, vals = [], []
+    for sym,val in basic:
+        syms.append(sym)
+        vals.append(val)
+
+    return Environment(syms, vals, None)
+
+basic_environment = make_basic_environment()
+
+# -----------------------------------------------------------------------------

@@ -57,6 +57,7 @@ def tokenize(iterable):
         yield readtokens(iterable)
     else:
         for text in iterable:
+            text = text.strip()
             while len(text) != 0:
                 tok, text = readtoken(text)
                 yield tok
@@ -65,6 +66,19 @@ def test_tokenize():
     print "testing: tokenize"
     assert list(tokenize(["'(helloo)  "])) == ["'", '(', 'helloo', ')']
     assert list(tokenize([" ' ( helloo ) "])) == ["'", '(', 'helloo', ')']
+
+    assert list(tokenize("""
+(
+   'hi
+()  hope this 
+
+           
+works
+          ok
+
+)
+""".splitlines())) == "( ' hi ( ) hope this works ok )".split()
+
 test_list.append(test_tokenize)
 
 # -----------------------------------------------------------------------------
@@ -73,5 +87,4 @@ for item in test_list:
     item()
 
 # -----------------------------------------------------------------------------
-
 

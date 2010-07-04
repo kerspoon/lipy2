@@ -1,7 +1,7 @@
 
 from lex import tokenize
 from parse import parse
-from environment import environment
+from environment import Environment
 from function import basic_environment
 from repl import repl
 
@@ -36,14 +36,14 @@ def testall():
         ("( + 3 4 )" , "(quote (+ 3 4))"),
         ("hello"     , "'hello"),
         ("( hello )" , "'(hello)"),
-        ("define-ok" , "(define x 20)" ),
+        ("nil"       , "(define x 20)" ),
         ("20"        , "x" ),
-        ("set-ok"    , "(set! x 44)" ),
+        ("nil"       , "(set! x 44)" ),
         ("44"        , "x" ),
-        ("define-ok" , "(define m 2)" ),
-        ("define-ok" , "(define (add8 y) (+ 8 y) )" ),
-        ("define-ok" , "(define (getspoon) 'spoon )" ),
-        ("define-ok" , "(define (mac x y z)  (+ x (* y z) ))" ),
+        ("nil"       , "(define m 2)" ),
+        ("nil"       , "(define (add8 y) (+ 8 y) )" ),
+        ("nil"       , "(define (getspoon) 'spoon )" ),
+        ("nil"       , "(define (mac x y z)  (+ x (* y z) ))" ),
         ("10"        , "(add8 m)" ),
         ("1001"      , "(mac 1 10 100)" ),
         ("y"         , "(if true 'y 'n)" ),
@@ -66,21 +66,20 @@ def testall():
         ("5"         , "(cdr (cons 4 5))"),
         # -------------------------------------- Nesting
         ("10"        , "(if true (if true 10 20) 30 )"),
-        ("define-ok" , "(define (add13 y) (+ ((lambda (z) (+ 3 z)) 10) y) )" ),
+        ("nil" , "(define (add13 y) (+ ((lambda (z) (+ 3 z)) 10) y) )" ),
         ("15"        , "(add13 (- 0(- 0 2)) )" ),
         # -------------------------------------- Shorthand quote
         ("hi"        , "'hi"),
         ("( + 3 4 )" , "'(+ 3 4)"),
         # -------------------------------------- Random
         # ("#PROC"       , "(lambda () (+ 3 -4))" ),
-        ("define-ok"   , "(define meep (lambda () (+ 2 -6)))" ),
+        ("nil"         , "(define meep (lambda () (+ 2 -6)))" ),
         ("-4"          , "(meep)" ),
         ("( 45 . 32 )" , "'(45 . 32)" ),
         ("( as . nd )" , "'(as.nd)" ),
         ("nil"         , "(display 'hello)"),
-        ("nil"         , "(display2 'hello)"),
         ("6"           , "((lambda (x) (+ x 1)) 5)"),
-        ("define-ok"   , "(define aax 2)"),
+        ("nil"         , "(define aax 2)"),
         ("154"         , "((lambda (moose) (set! aax moose) 154) -73)"),
         ("-73"         , "aax"),
         # -------------------------------------- Maths
@@ -94,12 +93,12 @@ def testall():
         ("false"        , "(= 4 5)"),
         ("true"         , "(= 5 5)"),
         # -------------------------------------- Recurse (works but spams output)
-        # ("define-ok"   , "(define (xxx x) (display2 'in) (if (< x 10) (xxx (+ x 1))))"),
+        # ("nil"         , "(define (xxx x) (display2 'in) (if (< x 10) (xxx (+ x 1))))"),
         # ("nil"         , "(xxx 0)"),
         # ("nil"         , "(xxx 1)"),
         # ("nil"         , "(xxx 9)"),
         # -------------------------------------- Factorial 
-        ("define-ok"   , """(define (factorial n)
+        ("nil"       , """(define (factorial n)
                               (if (= n 0)
                                 1
                                 (if (= n 1)
@@ -111,13 +110,13 @@ def testall():
         ("6"         ,"(factorial 3)"),
         ("40320"     ,"(factorial 8)"),
         # -------------------------------------- Nested Define
-        ("define-ok"   , """(define (outer w x)
+        ("nil"   , """(define (outer w x)
                               (define (inner y z)
-                                (+ w y z))
+                                (+ w (+ y z)))
                               (inner x 1))"""),
         ("111"         ,"(outer 10 100)"),
         # -------------------------------------- Fibonacci James
-        ("define-ok"   , """(define (fibonacci-james n)
+        ("nil"   , """(define (fibonacci-james n)
                                 (define (fib n1 n2 aaaaaa)
                                     (if (= aaaaaa n)
                                         n1
@@ -125,7 +124,7 @@ def testall():
                                 (fib 0 1 0))"""),
         ("55"         ,"(fibonacci-james 10)"),
         # -------------------------------------- Fibonacci
-        ("define-ok"   , """(define fibonacci
+        ("nil"   , """(define fibonacci
                               (lambda (n)
                                 (define fib 
                                   (lambda (n1 n2 cnt)
@@ -141,14 +140,31 @@ def testall():
         ('"jam"'      , '"jam"'),
         ('"jam"'      , '(car (cons "jam" "spoon"))'),
         ('"jam"'      , '\'"jam"'),
+        # -------------------------------------- Basic Functions
+        ('nil'       , "(display 'funcs)"),
+        ("nil"       , "(define (test0) 0)"),
+        ("0"         , "(test0)"),
+        ("nil"       , "(define (test1 x) x)"),
+        ("-5"        , "(test1 -5)"),
+        ("nil"       , "(define (test2 x y) (cons x y))"),
+        ("( 6 . hi )", "(test2 6 'hi)"),
+        ("nil"       , "(define (test3 x y z) (set! x y) z)"),
+        ("hi"        , "(test3 x 6 'hi)"),
+        ("nil"       , "(define (test4 x y z) (+ x y) z)"),
+        ("56"        , "(test4 12 34 56)"),
+        ("nil"       , "(define (test5 x y z) (+ x y) z (+ 2 4) (+ 7 z))"),
+        ("9"         , "(test5 4 3 2)"),
+
+        # -------------------------------------- Dotted Function Calling
+        ("nil"           , "(define (test6 . all) all)"),
+        ("( 1 )"         , "(test6 1)"),
+        ("( 1 2 )"       , "(test6 1 2)"),
+        ("( ( a . b ) )" , "(test6 '(a . b))"),
         # -------------------------------------- Done
         # ("nil"         , "(env)" ),
         ("nil"         , "()" )]
 
-    syms, vals = zip(*basic_environment)
-    env = environment(syms, vals)
-    env = env.extend([],[])
-
+    env = Environment([], [], basic_environment)
     DEBUG = False
 
     for n, (expected, inp) in enumerate(to_test):
@@ -174,7 +190,7 @@ def testall():
             print "  > result   ", res   
             print "-------------"
             
-# testall()
+testall()
 
 def testme(): 
     inp = """
@@ -185,64 +201,23 @@ def testme():
     (when (= a 4) 'hello)
 """
 
-    inp2 = """
-    (define MM false)
-    (callcc (lambda (k) 6))
-    (display MM)
-    (callcc (lambda (jaaam) (set! MM jaaam)))
-    (display MM)
-
-    (define CC false)
-    ((lambda (i)
-        (callcc (lambda (k) (set! CC k)))
-        (display i)
-        (set! i (+ i 1)))0)
-
-    (CC nil)
-    (CC nil)
-    (CC nil)
-
-    (define KK false)
-    (begin 
-         (display (callcc (lambda (k) (set! KK k) 'jam)))
-         (newline))
-    (KK 5)
-    (KK 'moose)
-    """
-
-    inp = """
-    (define point (class (base-class base-class) (add length angle mag) (x y)))
-    (define p1 (class (point base-class) (x) (no)))
-    (p1 'x)
-    (set-slot! p1 x 4)
-    (p1 'x)
-    (set-slot! p1 y 7)
-    (p1 'x)
-    (p1 'y)
-    """
-
-
-
-    syms, vals = zip(*basic_environment)
-    env = environment(syms, vals)
-    for result in repl(env.extend([],[]),parse(tokenize([inp]))):
+    env = Environment([], [], basic_environment)
+    for result in repl(env,parse(tokenize([inp]))):
         print "$", result
 
-testme()
+# testme()
 
 def read_file(stream, env):
-
     for result in repl(env, parse(tokenize(iter(stream)))):
         print result
 
 def main():
-    syms, vals = zip(*basic_environment)
-    env = environment(syms, vals)
+    env = Environment([], [], basic_environment)
 
-    # with open("prelude.scm") as prelude:
-    #    read_file(prelude, env)
+    with open("prelude.scm") as prelude:
+       read_file(prelude, env)
 
-    for result in repl(env.extend([],[]),parse(tokenize(reader_raw()))):
-        print result
-# main()
+    # for result in repl(env,parse(tokenize(reader_raw()))):
+    #     print result
+main()
 

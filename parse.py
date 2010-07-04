@@ -1,16 +1,7 @@
 
 import re
-import string  
-
-class lipy_string(object):
-    def __init__(self,text):
-        self.text = text
-    def __str__(self):
-        return self.text
-    def __len__(self):
-        return len(self.text)
-        
-# todo make sure it only accepts valid chars
+import string
+from datatypes import nil, true, false, mksym, cons, from_list, LispString, LispInteger
 
 class iterator_undo(object):   # undo-able iterator wrapper
     def __init__(self, iterable):
@@ -23,8 +14,8 @@ class iterator_undo(object):   # undo-able iterator wrapper
 
     def next(self):
         if self.stack:
-                # print "next: stack", self.stack
-                return self.stack.pop()
+            # print "next: stack", self.stack
+            return self.stack.pop()
         return self.iterator.next()  # Raises StopIteration eventually
 
     def undo(self, item):
@@ -94,81 +85,57 @@ def test_isnumber():
     assert not isnumber("-10+")
 test_isnumber()
 
+# -----------------------------------------------------------------------------
+
+quote = mksym("quote")
+
+
+def valid_symbol_name(text):
+    return set(text).issubset(normalchars)
+
 def inner_parse(tokens):
     """take the token list from the lexer and make it into an object"""
 
     tok = tokens.next()
-    # print "inner_parse:", tok
 
     assert len(tok) != 0, "zero sized token"
     assert tok != ".", "found '.' outside of pair"
     assert tok != ")", "found ')' mismatched bracket"
 
     if tok == "'":
-        return ["quote", [inner_parse(tokens), "nil"]]
+        return from_list([quote, inner_parse(tokens), nil])
     elif tok[0] == '"':
-        return lipy_string(tok[1:-1])
+        return LispString(tok[1:-1])
     elif tok == "(":
         tok = tokens.next()
 
-        if tok == ")":
-            return "nil"
+        if tok == ")": return nil
 
         tokens.undo(tok)
-        sexp = [inner_parse(tokens), "nil"]
-        full_sexp = sexp
-
+        tok_list = [inner_parse(tokens)]
         while (tokens.peek() not in [")", "."]):
-            sexp[1] = [inner_parse(tokens),"nil"]
-            sexp = sexp[1]
+            tok_list.append(inner_parse(tokens))
         
         tok = tokens.next()
         if tok == ".":
-            sexp[1] = inner_parse(tokens)
+            tok_list.append(inner_parse(tokens))
             assert tokens.next() == ")", "expected one sexp after a fullstop"
         else:
+            tok_list.append(nil)
             assert tok == ")", "missing close bracket of pair"
-        return full_sexp
+
+        return from_list(tok_list)
+    elif isnumber(tok):
+        return LispInteger(int(tok))
     else:
-        # we have a symbol or number
-        # print "symbol:", tok, tokens.peek()
-        if isinstance(tok,str):
-            if isnumber(tok):
-                return int(tok)
-            assert set(tok).issubset(normalchars), "invalid atom in symbol"
-            return tok
-        raise Exception("can't happen")
+        # we have a symbol 
+        assert valid_symbol_name(tok), "invalid atom in symbol '%s'" % tok
+        return mksym(tok)
 
 def parse(tokens):
     tokens = iterator_undo(tokens)
     while (True):
         yield inner_parse(tokens)
-
-def sexp_str(sexp):
-    text = ""
-    if isinstance(sexp,list):
-        text += "( "
-        while (isinstance(sexp,list)):
-            assert(len(sexp)==2), "lists (cons pairs) must only have 2 elements"
-            text += sexp_str(sexp[0]) + " "
-            sexp = sexp[1]
-        assert isinstance(sexp,(str,int,lipy_string)), "must be str, int or list"
-        assert isinstance(sexp,int) or len(sexp) != 0, "zero sized token"
-
-        if sexp != "nil":
-            text += ". " + sexp_str(sexp) + " "
-        text += ")"
-    elif isinstance(sexp,lipy_string):
-        text += '"' + str(sexp) + '"'
-    elif isinstance(sexp,str):
-        assert set(sexp).issubset(normalchars), "invalid atom in symbol" + sexp
-        text += sexp
-    elif isinstance(sexp,int):
-        text += str(sexp)
-    else:
-        print type(sexp), str(sexp)
-        raise Exception("must be str, int, quoted string or list")
-    return text 
 
 def test():
     from lex import tokenize
@@ -199,7 +166,7 @@ def test():
         tokens = tokenize([test])
         result = list(parse(tokens))
         assert len(result) == 1
-        res = sexp_str(result[0])
+        res = str(result[0])
         if res != expected:
             print "Mismatch"
             print "test    :", test

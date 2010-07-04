@@ -1,65 +1,56 @@
 
-from parse import sexp_str
-
 class MissingSym(Exception):
     pass
 
 class AlreadyDefined(Exception):
     pass
 
-class environment:
+# ------------------------------------------------------------------------------
+
+class Environment:
     """Binds symbols to values. Seperate frame can mean bindings can 
     shadow others. You cannot re-bind something in the same frame though
     you can set it to something else."""
 
-    def __init__(self, syms=[], vals=[], parent = None):
-        """create a frame with no parent and the binding given"""
+    def __init__(self, syms, vals, parent):
+        # func init :: [Str] -> [LispBase] -> Optional Environment 'parent' -> Environment
         self.frame = {}
-        for sym, val in zip(syms, vals):
-            assert(isinstance(sym,str))
-            self.frame[sym] = val
         self.parent = parent
-
-    def lookup(self, sym):
-        """returns the value bound to the symbol in the environment"""
-        if sym in self.frame:
-            return self.frame[sym]
-        if self.parent is None:
-            print self 
-            raise MissingSym("symbol not in environment: " + sym)
-        return self.parent.lookup(sym)
-
-    def extend(self, syms, vals):
-        """returns a new environment with a frame consisting of the new bindings"""
-        # print "EXTEND: ", zip(syms,vals)
-        return environment(syms, vals, self)
+        for sym, val in zip(syms, vals):
+            assert(isinstance(sym, str))
+            self.frame[sym] = val
 
     def add(self, sym, val):
-        """adds a new binding to the current frame of the environment"""
-        assert(isinstance(sym,str))
-        # print "ADD: ", sym, val
+        # func add :: Str 'sym' -> SchemeBase 'val' -> None
+        assert(isinstance(sym, str))
         if sym in self.frame:
             raise AlreadyDefined("symbol already in environment: " + sym)
         self.frame[sym] = val
 
-    def set(self, sym, val):
-        """changes an existing binding in the environment"""
-        assert(isinstance(sym,str))
-        # print "SET: ", sym, val
+    def get(self, sym):
+        # func get :: Str 'sym' -> SchemeBase
+        assert(isinstance(sym, str))
         if sym in self.frame:
-            self.frame[sym] = val
-            return
+            return self.frame[sym]
         if self.parent is None:
             raise MissingSym("symbol not in environment: " + sym)
-        self.parent.set(sym, val)
+        return self.parent.get(sym)
+
+    def set(self, sym, val):
+        # func set :: Str 'sym' -> SchemeBase 'val' -> None
+        assert(isinstance(sym, str))
+        if sym in self.frame:
+            self.frame[sym] = val
+        elif self.parent is None:
+            raise MissingSym("symbol not in environment: " + sym)
+        else:
+            return self.parent.set(sym, val)
 
     def __str__(self):
+        # func __str__ :: None -> Str
         ret = "\n"
         for sym, val in self.frame.items():
-            if isinstance(val,list):
-                ret += sym + " = " + sexp_str(val) + "\n"
-            else:
-                ret += sym + " = " + str(val) + "\n"
+            ret += sym + " = " + str(val) + "\n"
         ret += "---\n"
         if self.parent is not None:
             ret += str(self.parent)
@@ -67,37 +58,39 @@ class environment:
             ret += "===\n"
         return ret
 
+# ------------------------------------------------------------------------------
+
 def test():
-    topenv = environment(["a","b","c"],[1, 2, 3])
+    topenv = Environment(["a","b","c"],[1, 2, 3], None)
     def test1():
-        topenv = environment(["a","b","c"],[1, 2, 3])
-        assert(topenv.lookup("a") == 1)
-        assert(topenv.lookup("b") == 2)
-        assert(topenv.lookup("c") == 3)
+        topenv = Environment(["a","b","c"], [1, 2, 3], None)
+        assert(topenv.get("a") == 1)
+        assert(topenv.get("b") == 2)
+        assert(topenv.get("c") == 3)
 
     def test2():
-        newenv = topenv.extend([],[])
-        assert(newenv.lookup("a") == 1)
-        assert(newenv.lookup("b") == 2)
-        assert(newenv.lookup("c") == 3)
+        newenv = Environment([], [], topenv)
+        assert(newenv.get("a") == 1)
+        assert(newenv.get("b") == 2)
+        assert(newenv.get("c") == 3)
 
     def test3():
-        newenv = topenv.extend(["x"],[7])
-        assert(newenv.lookup("x") == 7)
-        assert(newenv.lookup("a") == 1)
-        assert(newenv.lookup("b") == 2)
-        assert(newenv.lookup("c") == 3)
+        newenv = Environment(["x"],[7], topenv)
+        assert(newenv.get("x") == 7)
+        assert(newenv.get("a") == 1)
+        assert(newenv.get("b") == 2)
+        assert(newenv.get("c") == 3)
 
     def test4():
-        newenv = topenv.extend([],[])
+        newenv = Environment([], [], topenv)
         newenv.add("x", 7)
-        assert(newenv.lookup("x") == 7)
+        assert(newenv.get("x") == 7)
         newenv.set("x", 99)
-        assert(newenv.lookup("x") == 99)
+        assert(newenv.get("x") == 99)
 
     def test5():
         try:
-            newenv = topenv.extend([],[])
+            newenv = Environment([], [], topenv)
             newenv.add("x", 7)
             newenv.add("x", 7)
             raise Exception("an error should have been thrown")
@@ -106,15 +99,15 @@ def test():
 
     def test6():
         try:
-            newenv = topenv.extend([],[])
-            newenv.lookup("notdefined")
+            newenv = Environment([], [], topenv)
+            newenv.get("notdefined")
             raise Exception("an error should have been thrown")
         except MissingSym:
             pass
 
     def test7():
         try:
-            newenv = topenv.extend([],[])
+            newenv = Environment([], [], topenv)
             newenv.set("x", 7)
             raise Exception("an error should have been thrown")
         except MissingSym:
