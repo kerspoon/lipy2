@@ -174,7 +174,7 @@ def testall():
             print "  > result   ", res   
             print "-------------"
             
-testall()
+# testall()
 
 def testme(): 
     inp = """
@@ -210,6 +210,19 @@ def testme():
     (KK 'moose)
     """
 
+    inp = """
+    (define point (class (base-class base-class) (add length angle mag) (x y)))
+    (define p1 (class (point base-class) (x) (no)))
+    (p1 'x)
+    (set-slot! p1 x 4)
+    (p1 'x)
+    (set-slot! p1 y 7)
+    (p1 'x)
+    (p1 'y)
+    """
+
+
+
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
     for result in repl(env.extend([],[]),parse(tokenize([inp]))):
@@ -226,10 +239,10 @@ def main():
     syms, vals = zip(*basic_environment)
     env = environment(syms, vals)
 
-    with open("prelude.scm") as prelude:
-        read_file(prelude, env)
+    # with open("prelude.scm") as prelude:
+    #    read_file(prelude, env)
 
     for result in repl(env.extend([],[]),parse(tokenize(reader_raw()))):
         print result
-main()
+# main()
 

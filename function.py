@@ -104,6 +104,71 @@ class macro(object):
         return thunk(lipy_eval)(newcontext, self.body[0], call_inner)
 
 
+class ScmClass(object):
+    
+    def __init__(self, parents, parameters, slots):
+        
+        # something can't be both a parameter and a slot
+        assert set(parameters).isdisjoint(set(slots))
+
+        # gather all super-classes and make unique
+        self.parents = set(list(parents))
+        for parent in parents:
+            self.parents |= parent.parents
+
+        # make sure they are unique
+        self.slots = set(list(slots))
+
+        # parameters are anything passed in and
+        # anything in superclass parameters & superclass slots.
+        # except the ones that are slots in this class
+        # they are start as nil
+        self.parameters = {}
+
+        for p in parameters:
+            self.parameters[p] = "nil"
+
+        for sc in self.parents:
+            for s in sc.slots:
+                if s not in self.slots:
+                    self.parameters[s] = "nil"
+
+            for p,v in sc.parameters.items():
+                    self.parameters[p] = v
+
+
+        print "make class:"
+        print "\tparents", self.parents
+        print "\tparameters", self.parameters
+        print "\tslots", self.slots
+
+    def __call__(self, context, args, continuation):
+
+        print "call class:"
+        print "\targs", args
+
+        def call_inner (evaled_param_name):
+
+            param = self.parameters[evaled_param_name]
+
+            # return as data when only one arg
+            # todo: change this to `if callable`
+            if args[1] is "nil": 
+                return thunk(continuation)(param)
+        
+            # call as function with `self` and the rest of args
+
+            def call_inner2(result):
+                return thunk(continuation)(result)
+
+            new_args = [self, args[1]]
+            return thunk(param)(context, new_args, call_inner2)
+
+        # evaluate parameter name
+        return thunk(lipy_eval)(context, args[0], call_inner)
+
+base_class = ScmClass(set(), set(), set())
+
 #Convert a python function into a form
 #suitable for the interpreter
 # TODO this should be a deccorator
@@ -304,6 +369,56 @@ def callcc_func(context, args, continuation):
     return thunk(lipy_eval)(context, args[0], callcc_func_inner)
 
 # -----------------------------------------------------------------------------
+# class
+# 
+# (class (<parent1> ...) (slot1 ...) (parameter1 ...))
+# 
+# create a new class
+# 
+# -----------------------------------------------------------------------------
+
+def class_func(context, args, continuation):
+    params = flatten(args[1][0])[:-1]
+    slots = flatten(args[1][1][0])[:-1]
+
+    # parents ['base-class']
+    # parameters ['x', 'y']
+    # slots ['add', 'length', 'angle', 'mag']
+    
+    def call_inner_class(evaluated_parents):
+        parents = evaluated_parents[:-1]
+        return thunk(continuation)(ScmClass(parents, params, slots))
+
+    # evaluate the arguments
+    return thunk(eval_list)(context, args[0], call_inner_class)
+
+# -----------------------------------------------------------------------------
+# set-slot!
+# 
+# (set-slot! <class-name> <param-name> <value>)
+# 
+# change the value of `slot` in `class` to `value`.
+# 
+# -----------------------------------------------------------------------------
+
+def set_slot_func(context, args, continuation):
+    
+    class_name = args[0]
+    param_name = args[1][0]
+    value = args[1][1][0]
+
+    def call_inner(evaled_class):
+
+        def call_inner2(evaled_val):
+            evaled_class.parameters[param_name] = evaled_val
+            return thunk(continuation)("set-slot-ok")
+    
+        return thunk(lipy_eval)(context, value, call_inner2)
+
+    return thunk(lipy_eval)(context, class_name, call_inner)
+    
+
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 def macro_func(context, args, continuation):
@@ -353,7 +468,11 @@ basic_environment = [
     (">=", predefined_function(lambda a, b:to_scm_bool(a >= b))),
     ("cons", predefined_function(lambda a, b:[a, b])),
     ("car", predefined_function(lambda(a, b):a)),
-    ("cdr", predefined_function(lambda(a, b):b))]
+    ("cdr", predefined_function(lambda(a, b):b)),
+
+    ("base-class", base_class),
+    ("class", class_func),
+    ("set-slot!", set_slot_func)]
 
 # sexp_str, lipy_eval, call/cc, ^, environment
 
