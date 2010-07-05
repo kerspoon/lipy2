@@ -97,7 +97,7 @@ def rest(args):
 
 # ------------------------------------------------------------------------------
 
-debug = False
+debug = True
 
 class LispLambda(object):
     def __init__(self, scm_vars, body):
@@ -196,5 +196,72 @@ class LispInteger(LispBase):
         self.num = num
     def scm_eval(self, env): return self
     def __str__(self): return str(self.num)
+
+# ------------------------------------------------------------------------------
+
+class LispClass(LispBase):
+    
+    def __init__(self, parents, parameters, slots):
+        
+        print "pre-make-class:"
+        print "\tparents", parents
+        print "\tparameters", parameters
+        print "\tslots", slots
+
+        # something can't be both a parameter and a slot
+        assert set(parameters).isdisjoint(set(slots))
+
+        # gather all super-classes and make unique
+        self.parents = set(list(parents))
+        for parent in parents:
+            self.parents |= parent.parents
+
+        # make sure they are unique
+        self.slots = set(list(slots))
+
+        # parameters are anything passed in and
+        # anything in superclass parameters & superclass slots.
+        # except the ones that are slots in this class
+        # they are start as nil
+        self.parameters = {}
+
+        for p in parameters:
+            self.parameters[p] = "nil"
+
+        for sc in self.parents:
+            for s in sc.slots:
+                if s not in self.slots:
+                    self.parameters[s] = "nil"
+
+            for p,v in sc.parameters.items():
+                    self.parameters[p] = v
+
+        print "make-class:"
+        print "\tparents", self.parents
+        print "\tparameters", self.parameters
+        print "\tslots", self.slots
+
+    def __call__(self, args, env):
+        """__call__ :: SchemePair -> Environment"""
+
+        print "call-class:"
+        print "\targs", args
+
+        # find the parameter name
+        param = self.parameters[first(args)]
+
+        # return as data when only one arg
+        if rest(args) is nil: 
+            return param
+
+        # call as function with `self` and the rest of args
+        new_args = cons(self, rest(args))
+        result = param(new_args, env)
+        return result
+
+    def scm_eval(self, env): return mksym("<#class#>")
+    def __str__(self): return "<#class#>"
+
+class_base = LispClass(set(), set(), set())
 
 # ------------------------------------------------------------------------------

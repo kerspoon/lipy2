@@ -1,9 +1,7 @@
-LiPi
+LiPi - Lisp in Python
 ====
 
-Lisp in Python
-
-A smallish lisp/scheme implementation using python.  It has a small test suite but only test for success at the moment. Nothing of special interest, I have tried to keep the code clean-ish but I have been playing with more complex python so the results of my efforts might have resulted in overly complex sections. 
+A smallish lisp/scheme implementation using python. It has a small test suite but only test for success at the moment. Nothing of special interest, I have tried to keep the code clean-ish but I have been playing with more complex python so the results of my efforts might have resulted in overly complex sections. 
 
 This is my 5th lisp implementation, the previous ones have been in C++, D, D again, and a previous version in Python. I really haven't tried to do anything new. 
 
@@ -17,54 +15,38 @@ We have a working lexer, parser and printer. It can take the following BNF:
 
 This is converted into a python **list** or a **str**. Which can be printed back out. We can 'eval' properly and the test list works apart from printing functions and procedures. 
 
-ToDo
-====
+I have just addded basic classes, these are unusual (for me) in that there is no difference between a class and an object. It's all crazy dynamic. 
 
-It mostly works, decided to get rid of CPS to make the code a bit neater. 
+It used to use CPS to help tail calls and give call/cc but I changed it all back to make the code neater.
 
-  - Add classes
+Long Term Goal
+=============
+
+I would like a type-checked, objected-orientated lisp with a good module system and simple macros. If I was to ever used it for real coding I would need good error messages, a large library and integration with emacs at the least but as that will take forever I intend to focus on the interesting rather than the practicle. It is mearly a proof of concept. 
+
+ + Objected Orientated 
+ + Type Checked
+ + Good Module System
+ + Simple Macros
+
+To Do
+=====
+
   - Deal with errors better
   - Add more built in functions and macros
   - Think about modules and objects (import)
-  - Libraries, libraries, libraries
-  - csv file parser
 
-Things to add
-==============
-
-^ / * eq equal <> not and or read assert
+The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. 
 
 
-(define (length xs) 
-  (xs,  inject
-        0 
-        (lambda(x y) + x 1)))
+Structure
+====
 
-(define (reverse xs)
-  (xs,  inject
-        '()
-        (flip cons)))
+ + *lex* - tokenise a string into a list of string tokens
+ + *parse* - convert tokens into datatypes
+ + *datatypes* - all the data in scheme is of one of these types
+ + *environment* - anything defined in lipy get stored in an environment
+ + *function* - all built in lipy function calls as well as the default env that includes these defaults
+ + *main* - tests and misc
+ + *prelude* - some default scheme functions taken from Haskell
 
-(define (map f xs)
-  (xs,  foldr
-        (lambda(x y) cons (f x) y)
-        '()))
-(define (filter f xs)
-  (xs,  foldr
-        (lambda(x y) if (f x) (cons x y) y)
-        '()))
-
-(define quick-sort (lambda(xs) 
-  if  (xs, null)
-      '()
-      (concat (concat (((xs, cdr), filter (curry >= (xs, car))), quick-sort)
-      (list (xs, car)))
-              (((xs, cdr), filter (curry < (xs, car))), quick-sort))))
-
-
-(define (max xs) (xs,  reduce (pick >)))
-(define (min xs) (xs,  reduce (pick <)))
-(define (sum xs)         (xs, reduce +  ))
-(define (product xs)     (xs, reduce *  ))
-(define (and xs)         (xs, reduce && ))
-(define (or  xs)         (xs, reduce || ))

@@ -1,4 +1,4 @@
-from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger
+from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base
 from environment import Environment
 
 # -----------------------------------------------------------------------------
@@ -176,6 +176,50 @@ def begin_func(args, env):
 
 
 # -----------------------------------------------------------------------------
+# class
+# 
+# (class (<parent1> ...) (slot1 ...) (parameter1 ...))
+# 
+# create a new class
+# 
+# -----------------------------------------------------------------------------
+
+def class_func(args, env):
+
+    # turn to a list and remove the trailing nil
+    # make the params and slots a string
+    parents = to_list(first(args))[:-1]
+    params = [str(x) for x in to_list(first(rest(args)))[:-1]]
+    slots = [str(x) for x in to_list(first(rest(rest(args))))[:-1]]
+
+    # lookup the parents
+    evaled_parents = [parent.scm_eval(env) for parent in parents]
+
+    return LispClass(evaled_parents, params, slots)
+
+# -----------------------------------------------------------------------------
+# class-set!
+# 
+# (class-set! <class-name> <param-name> <value>)
+# 
+# change the value of `slot` in `class` to `value`.
+# 
+# -----------------------------------------------------------------------------
+
+def class_set_func(args, env):
+    
+    class_name = first(args)
+    param_name = first(rest(args))
+    value = first(rest(rest(args)))
+
+    evaled_class = class_name.scm_eval(env)
+    evaled_value = value.scm_eval(env)
+
+    evaled_class.parameters[param_name] = evaled_value
+
+    return nil
+
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
@@ -221,6 +265,10 @@ def make_basic_environment():
         ("if"    , if_func),
         ("lambda", lambda_func),
         ("begin" , begin_func),
+
+        ("class"      , class_func),
+        ("class-set!" , class_set_func),
+        ("class-base" , class_base),
 
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),

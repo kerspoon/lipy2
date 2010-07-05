@@ -1,0 +1,39 @@
+
+Things to add
+==============
+
+^ / * eq equal <> not and or read assert
+
+
+(define (length xs) 
+  (xs,  inject
+        0 
+        (lambda(x y) + x 1)))
+
+(define (reverse xs)
+  (xs,  inject
+        '()
+        (flip cons)))
+
+(define (map f xs)
+  (xs,  foldr
+        (lambda(x y) cons (f x) y)
+        '()))
+(define (filter f xs)
+  (xs,  foldr
+        (lambda(x y) if (f x) (cons x y) y)
+        '()))
+
+(define quick-sort (lambda(xs) 
+  if  (xs, null)
+      '()
+      (concat (concat (((xs, cdr), filter (curry >= (xs, car))), quick-sort)
+      (list (xs, car)))
+              (((xs, cdr), filter (curry < (xs, car))), quick-sort))))
+
+(define (max xs) (xs,  reduce (pick >)))
+(define (min xs) (xs,  reduce (pick <)))
+(define (sum xs)         (xs, reduce +  ))
+(define (product xs)     (xs, reduce *  ))
+(define (and xs)         (xs, reduce && ))
+(define (or  xs)         (xs, reduce || ))

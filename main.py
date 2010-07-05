@@ -3,7 +3,21 @@ from lex import tokenize
 from parse import parse
 from environment import Environment
 from function import basic_environment
-from repl import repl
+
+# -----------------------------------------------------------------------------
+
+def repl(env, parser, debug=False):
+    """reads a statement, evaluates it, applys (calls 
+       as function) then prints it's result"""
+
+    for sexp in parser:
+        if debug: print "#< ", str(sexp)
+        result = sexp.scm_eval(env)
+        if debug: print "#> ", str(result)
+        yield str(result)
+
+
+# -----------------------------------------------------------------------------
 
 def reader_raw():
     """a generator which returns one complete sexp as a string"""
@@ -21,9 +35,13 @@ def reader_raw():
             yield code
             code = ""
 
+# -----------------------------------------------------------------------------
+
 def read_file(stream, env):
     for result in repl(env, parse(tokenize(iter(stream)))):
         print result
+
+# -----------------------------------------------------------------------------
 
 def testall():
     to_test = [
@@ -174,6 +192,23 @@ def testall():
         # -------------------------------------- Quine
 ("( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )",
  "( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )"),
+        # -------------------------------------- Class
+        ("<#class#>"         , "class-base" ),
+        ("nil"               , "(define point (class (class-base) (x y) (length total thing)))"),
+        ("nil"               , "(class-set! point length 2)"),
+        ("nil"               , "(class-set! point total (lambda (self) (+ (self _x) (self _y))))"),
+        ("nil"               , "(class-set! point thing (lambda (self mm) (+ mm ((self total) self))))"),
+        ("2"                 , "(point length)"),
+        ("<#procedure#>"     , "(point total)"),
+        ("nil"               , "(define p1 (class (point) () ()))"),
+        ("nil"               , "(class-set! p1 _x 4)"),
+        ("nil"               , "(class-set! p1 _y 6)"),
+        ("4"                 , "(p1 _x)"),
+        ("6"                 , "(p1 _y)"),
+        ("<#procedure#>"     , "(p1 total)"),
+        ("10"                , "((point total) p1)"),
+        ("10"                , "((p1 total) p1)"),
+        # ("110"               , "(p1 thing 100)"),
         # -------------------------------------- Done
         ("nil"         , "()" )]
 
@@ -209,12 +244,12 @@ def testall():
 testall()
 
 
+# -----------------------------------------------------------------------------
+
 def main():
     inp = """
-(display "----- List -----")
-(define (list . x) x)
-(display (cons "----- Lambda -----" '((lambda (a . all) (list all a)) 1)))
-((lambda (a . all) (list all a)) 1)
+(display "----- Thing -----")
+(define point (class (class-base) (x y) (length total)))
 """
 
     env = Environment([], [], basic_environment)
@@ -223,12 +258,14 @@ def main():
         for result in repl(env,parse(tokenize([inp]))):
             print "$", result
 
-    if False:
+    if True:
         with open("prelude.scm") as prelude:
             read_file(prelude, env)
 
     if False:
         for result in repl(env,parse(tokenize(reader_raw()))):
             print result
-# main()
+main()
 
+
+# -----------------------------------------------------------------------------
