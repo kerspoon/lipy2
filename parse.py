@@ -132,12 +132,18 @@ def inner_parse(tokens):
         assert valid_symbol_name(tok), "invalid atom in symbol '%s'" % tok
         return mksym(tok)
 
+def kill_comments(iterable):
+    for x in iterable:
+        if x[0] != ";":
+            yield x
+
 def parse(tokens):
-    tokens = iterator_undo(tokens)
+    tokens = iterator_undo(kill_comments(tokens))
     while (True):
         yield inner_parse(tokens)
 
 def test():
+    print "testing: parse"
     from lex import tokenize
 
     to_process = [ 
@@ -159,6 +165,12 @@ def test():
         ('(4"asdf")'   , '( 4 "asdf" )'), 
         ('(4."asdf")'   , '( 4 . "asdf" )'), 
         ('"as df"'    , '"as df"'), 
+        ('as ;'    , 'as'), 
+        ('as ;abcdef12345'    , 'as'), 
+        ('(as ";")'    , '( as ";" )'), 
+        ('(as "; hello")'    , '( as "; hello" )'), 
+        ('as ;;;;;;'    , 'as'), 
+        ('as ; !" %$ 86842 "$^P~>?:@:~'    , 'as'), 
         ("(() (()()))", "( nil ( nil nil ) )")]
     
     for test, expected in to_process:

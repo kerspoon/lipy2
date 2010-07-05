@@ -1,7 +1,7 @@
 
 from environment import Environment
 
-debug = True
+debug = False
 
 # ------------------------------------------------------------------------------
 
@@ -257,10 +257,11 @@ class LispClass(LispBase):
         if rest(args) is nil: 
             return param
 
+        raise Exception("invalid call to class")
         # call as function with `self` and the rest of args
-        new_args = cons(self, rest(args))
-        result = param(new_args, env)
-        return result
+        # new_args = cons(self, rest(args))
+        # result = param(new_args, env)
+        # return result
 
     def scm_eval(self, env): return mksym("<#class#>")
     def __str__(self): return "<#class#>"

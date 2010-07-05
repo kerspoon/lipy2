@@ -4,16 +4,18 @@ from parse import parse
 from environment import Environment
 from function import basic_environment
 
+DEBUG = False
+
 # -----------------------------------------------------------------------------
 
-def repl(env, parser, debug=False):
+def repl(env, parser):
     """reads a statement, evaluates it, applys (calls 
        as function) then prints it's result"""
 
     for sexp in parser:
-        if debug: print "#< ", str(sexp)
+        if DEBUG: print "#< ", str(sexp)
         result = sexp.scm_eval(env)
-        if debug: print "#> ", str(result)
+        if DEBUG: print "#> ", str(result)
         yield str(result)
 
 
@@ -38,8 +40,10 @@ def reader_raw():
 # -----------------------------------------------------------------------------
 
 def read_file(stream, env):
+    if DEBUG: print "read file start:", stream
     for result in repl(env, parse(tokenize(iter(stream)))):
-        print result
+        if DEBUG: print result
+    if DEBUG: print "read file finished: ", stream
 
 # -----------------------------------------------------------------------------
 
@@ -215,9 +219,8 @@ def testall():
     # ("nil"           , "(define (list . x) x)"),
 
     env = Environment([], [], basic_environment)
-    DEBUG = True
 
-
+    print "testing: toplevel"
     for n, (expected, inp) in enumerate(to_test):
         if DEBUG: print "----"
         if DEBUG: print "input    ", inp

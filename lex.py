@@ -20,10 +20,11 @@ def readtoken(text):
     if text[0] in specialtokens:
         return text[0], text[1:]
 
-    pattern = re.compile("([()'.]|[\w<>%=!^&?*+/-]+|\"[\w\s<>%=!^&?*+/-]+\")")
+    pattern = re.compile("([()'.]|[\w<>%=!^&?*+/-]+|\"[^\"]*\"|;.*)")
     result = pattern.match(text)
     
     assert result, "invalid input: '" + text + "'"
+
     if result.end() == len(text):
         return result.group(), ""
 
@@ -72,14 +73,17 @@ def test_tokenize():
    'hi
 ()  hope this 
 
-           
+           ;cmt
 works
           ok
 
 )
-""".splitlines())) == "( ' hi ( ) hope this works ok )".split()
+
+""".splitlines())) == "( ' hi ( ) hope this ;cmt works ok )".split()
 
 test_list.append(test_tokenize)
+
+
 
 # -----------------------------------------------------------------------------
 
@@ -87,4 +91,3 @@ for item in test_list:
     item()
 
 # -----------------------------------------------------------------------------
-

@@ -14,22 +14,20 @@ Long Term Goal
 
 I would like a type-checked, objected-orientated lisp with a good module system and simple macros. If I was to ever used it for real coding I would need good error messages, a large library and integration with emacs at the least but as that will take forever I intend to focus on the interesting rather than the practicle. It is mearly a proof of concept. 
 
+Main Goals
+----
+
  + Objected Orientated 
  + Type Checked
- + Good Module System
- + Simple Macros
+ + Good Module System (import include etc.)
+ + Simple Macros (as per arc-lisp)
 
-To Do
-=====
+Side Goals
+----
 
- - Add Macros as per arc-lisp
  - Deal with errors better (see how plt-racket does things)
  - Add more built in functions and macros (looks at r5rs and python)
- - Think about modules and objects (import include )
-
-The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. 
-
-I have no idea how to do type checking yet. Particularly as python doesn't have it by default either. 
+ - Emacs integration
 
 Structure
 ====
@@ -68,9 +66,9 @@ Adding a data-type
 
 There is no eval or apply function. Each data-type deals with these seperatly. Hence here are 3 things a new datatypes should have:
 
-  + \_\_str__  :: None -> Str
-  + \_\_call__ :: LispPair 'args' -> Environment 'env' -> LispBase
-  + scm_eval ::  Environment 'env' -> LispBase
+    __str__  :: None -> Str
+    __call__ :: LispPair 'args' -> Environment 'env' -> LispBase
+    scm_eval :: Environment 'env' -> LispBase
 
 To add a new datatype in addition to making it as above it should be included in the `lexer` & `parser` as well as defining the function that create and mainpulate it in `function.py`.
 
@@ -80,7 +78,7 @@ Classes
 Classes are simple stored as three parameters:
 
  + parents - a list of classes with all parents (including grandparents etc.)
- + parameters - the things that can be set in this class
+ + parameters - the things that can be set in this class (inherited from all parents)
  + slots - things that cannot be set in this class but become parameters of child-classes.
 
 To create a class you do the following:
@@ -106,10 +104,27 @@ Because it has no slots the functions can be called as follows:
 
 Note how calling a function you must use the class(instance) name twice -- this is messy and should change. 
 
+In the child class that was defined there are now 5 parameters and no slots. Any of the parameters can be changed including function but that doesn't change it for the base class or indeed other derived points hence calling the folling two may give completly different results even if they are both a subclass of `point`:
 
-Ideas
-====
+    ((p1 sum) p1 p2)
+    ((p2 sum) p1 p2)
+
+
+
+To Do
+=====
+
+1. Add comments to lexer
+2. The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. It will do for now.
+3. It would be nice to make classes a bit less dynamic. Maybe something like 
+
+    (class-final point length)  
+
+means that the point.length cannot be changed in this or in any subclasses created after it was set.
+
+4. I have no idea how to do type checking yet. Particularly as python doesn't have it by default either. 
+
+5. could make the following a macro to make creating instance like classes easier.
 
     (new p1 (point) 'x 4 'y 5) -- define p1 as a subclass of point with x=4 y=5
 
-    (class-final point length)  -- means that the point.length cannot be changed in this or in any subclasses created after it was set.
