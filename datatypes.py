@@ -1,6 +1,8 @@
 
 from environment import Environment
 
+debug = True
+
 # ------------------------------------------------------------------------------
 
 class LispBase(object):
@@ -96,8 +98,6 @@ def rest(args):
     return args.rest
 
 # ------------------------------------------------------------------------------
-
-debug = True
 
 class LispLambda(object):
     def __init__(self, scm_vars, body):
@@ -203,10 +203,11 @@ class LispClass(LispBase):
     
     def __init__(self, parents, parameters, slots):
         
-        print "pre-make-class:"
-        print "\tparents", parents
-        print "\tparameters", parameters
-        print "\tslots", slots
+        if debug:
+            print "pre-make-class:"
+            print "\tparents", parents
+            print "\tparameters", parameters
+            print "\tslots", slots
 
         # something can't be both a parameter and a slot
         assert set(parameters).isdisjoint(set(slots))
@@ -236,16 +237,18 @@ class LispClass(LispBase):
             for p,v in sc.parameters.items():
                     self.parameters[p] = v
 
-        print "make-class:"
-        print "\tparents", self.parents
-        print "\tparameters", self.parameters
-        print "\tslots", self.slots
+        if debug:
+            print "make-class:"
+            print "\tparents", self.parents
+            print "\tparameters", self.parameters
+            print "\tslots", self.slots
 
     def __call__(self, args, env):
         """__call__ :: SchemePair -> Environment"""
 
-        print "call-class:"
-        print "\targs", args
+        if debug:
+            print "call-class:"
+            print "\targs", args
 
         # find the parameter name
         param = self.parameters[first(args)]
