@@ -21,6 +21,10 @@ def reader_raw():
             yield code
             code = ""
 
+def read_file(stream, env):
+    for result in repl(env, parse(tokenize(iter(stream)))):
+        print result
+
 def testall():
     to_test = [
         # -------------------------------------- Special Symbols
@@ -133,15 +137,11 @@ def testall():
                                         (fib n2 (+ n1 n2) (+ cnt 1)))))
                                 (fib 0 1 0)))"""),
         ("55"         ,"(fibonacci 10)"),
-        # -------------------------------------- Quine
-# ("((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))",
-# "((lambda (x) (list x (list 'quote x)))'(lambda (x) (list x (list 'quote x))))"),
         # -------------------------------------- String
         ('"jam"'      , '"jam"'),
         ('"jam"'      , '(car (cons "jam" "spoon"))'),
         ('"jam"'      , '\'"jam"'),
         # -------------------------------------- Basic Functions
-        ('nil'       , "(display 'funcs)"),
         ("nil"       , "(define (test0) 0)"),
         ("0"         , "(test0)"),
         ("nil"       , "(define (test1 x) x)"),
@@ -154,18 +154,34 @@ def testall():
         ("56"        , "(test4 12 34 56)"),
         ("nil"       , "(define (test5 x y z) (+ x y) z (+ 2 4) (+ 7 z))"),
         ("9"         , "(test5 4 3 2)"),
-
         # -------------------------------------- Dotted Function Calling
         ("nil"           , "(define (test6 . all) all)"),
         ("( 1 )"         , "(test6 1)"),
         ("( 1 2 )"       , "(test6 1 2)"),
         ("( ( a . b ) )" , "(test6 '(a . b))"),
+        ("nil"           , "(define (list . x) x)"),
+        ("nil"           , "(define (test7 a . all) (list all a))"),
+        ("( nil 1 )"     , "(test7 1)"),
+        ("( ( 2 ) 1 )"   , "(test7 1 2)"),
+        ("( ( 2 3 4 5 6 ) 1 )"   , "(test7 1 2 3 4 5 6)"),
+        # -------------------------------------- Dotted Lambda Calling
+        ("( 1 )"         , "((lambda all all) 1)"),
+        ("( 1 2 )"       , "((lambda all all) 1 2)"),
+        ("( ( a . b ) )" , "((lambda all all) '(a . b))"),
+        ("( nil 1 )"     , "((lambda (a . all) (list all a)) 1)"),
+        ("( ( 2 ) 1 )"   , "((lambda (a . all) (list all a)) 1 2)"),
+        ("( ( 2 3 4 5 6 ) 1 )"   , "((lambda (a . all) (list all a)) 1 2 3 4 5 6)"),
+        # -------------------------------------- Quine
+("( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )",
+ "( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )"),
         # -------------------------------------- Done
-        # ("nil"         , "(env)" ),
         ("nil"         , "()" )]
 
+    # ("nil"           , "(define (list . x) x)"),
+
     env = Environment([], [], basic_environment)
-    DEBUG = False
+    DEBUG = True
+
 
     for n, (expected, inp) in enumerate(to_test):
         if DEBUG: print "----"
@@ -192,32 +208,27 @@ def testall():
             
 testall()
 
-def testme(): 
+
+def main():
     inp = """
-    (define list (lambda args args))
-    (define when (mac body 
-       (list 'if (car body) (cons 'begin (cdr body)))))
-    (define a 4)
-    (when (= a 4) 'hello)
+(display "----- List -----")
+(define (list . x) x)
+(display (cons "----- Lambda -----" '((lambda (a . all) (list all a)) 1)))
+((lambda (a . all) (list all a)) 1)
 """
 
     env = Environment([], [], basic_environment)
-    for result in repl(env,parse(tokenize([inp]))):
-        print "$", result
 
-# testme()
+    if True:
+        for result in repl(env,parse(tokenize([inp]))):
+            print "$", result
 
-def read_file(stream, env):
-    for result in repl(env, parse(tokenize(iter(stream)))):
-        print result
+    if False:
+        with open("prelude.scm") as prelude:
+            read_file(prelude, env)
 
-def main():
-    env = Environment([], [], basic_environment)
-
-    with open("prelude.scm") as prelude:
-       read_file(prelude, env)
-
-    # for result in repl(env,parse(tokenize(reader_raw()))):
-    #     print result
-main()
+    if False:
+        for result in repl(env,parse(tokenize(reader_raw()))):
+            print result
+# main()
 

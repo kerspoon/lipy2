@@ -68,8 +68,3 @@
 
 (display (concat '(1 2 3) '(4 5 6)))
 
-
-(define (test . num) (car num))
-(test 1 2 3)
-
-

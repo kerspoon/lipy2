@@ -68,9 +68,14 @@ def cons(first, rest):
 def from_list(args):
     # from_list :: [LispBase] -> LispPair
     # note that for a proper list a nil must be put at the end
-    if len(args) <= 1: raise Exception("must have 2 elements")
-    if len(args) == 2: return cons(args[0], args[1])
-    return cons(args[0], from_list(args[1:]))
+    if len(args) == 0: 
+        return nil
+    elif len(args) == 1: 
+        return args[0]
+    elif len(args) == 2: 
+        return cons(args[0], args[1])
+    else:
+        return cons(args[0], from_list(args[1:]))
 
 def to_list(sexp):
     # from_list :: LispPair -> [LispBase]
@@ -92,6 +97,8 @@ def rest(args):
 
 # ------------------------------------------------------------------------------
 
+debug = False
+
 class LispLambda(object):
     def __init__(self, scm_vars, body):
         """Procedure :: SchemeBase -> LispPair"""
@@ -101,36 +108,57 @@ class LispLambda(object):
         self.body = cons(mksym("begin"), body)
 
         if scm_vars is nil:
-            self.scm_vars = nil
+            self.scm_vars = [nil]
         elif isinstance(scm_vars, LispSymbol):
-            self.scm_vars = str(scm_vars)
+            self.scm_vars = [str(scm_vars)]
         else:
             assert isinstance(scm_vars, LispPair)
-            self.scm_vars = map(str, to_list(scm_vars))
+            list_vars = to_list(scm_vars)
+            self.scm_vars = map(str, list_vars[:-1]) 
+            if list_vars[-1] is nil:
+                self.scm_vars.append(nil)
+            else:
+                self.scm_vars.append(str(list_vars[-1]))
         
-    
+        if debug:
+            print "lambda-init"
+            print "\tvars\t", scm_vars
+            print "\tvars\t", self.scm_vars
+
     def __call__(self, args, env):
         """__call__ :: SchemePair -> Environment"""
 
-        if False:
-            print "class-call"
+        # eval everything
+        evaled_args = [arg.scm_eval(env) for arg in to_list(args)]
+
+        if debug:
+            print "lambda-call"
             print "\tvars\t", self.scm_vars
             print "\targs\t", args
+            print "\tcall\t", [str(x) for x in evaled_args]
 
-        if self.scm_vars is nil:
-            assert args is nil
-            new_env = Environment([], [], env)
-            # print "\tcall\tnil"
-        elif isinstance(self.scm_vars, str):
-            combined_args = from_list([arg.scm_eval(env) for arg in to_list(args)])
-            new_env = Environment([self.scm_vars], [combined_args], env)
-            # print "\tcall\t", combined_args
+        if self.scm_vars[-1] is nil:
+            # remove the ending nil
+            evaled_vars = self.scm_vars[:-1]
+            evaled_args = evaled_args[:-1]
         else:
-            evaled_args = [arg.scm_eval(env) for arg in to_list(args)]
-            assert len(self.scm_vars) == len(evaled_args)
-            new_env = Environment(self.scm_vars, evaled_args, env)
-            # print "\tcall\t", [str(x) for x in evaled_args]
+            # create the combined 'rest'
+            evaled_vars = self.scm_vars
+            start_args = evaled_args[:len(self.scm_vars)-1]
+            rest_args  = from_list(evaled_args[len(self.scm_vars)-1:])
+            evaled_args = start_args + [rest_args]
 
+        # vars and args must match exactly
+        assert len(evaled_vars) == len(evaled_args)
+            
+        if debug:
+            print "\tcall\t", [str(x) for x in evaled_vars]
+            print "\twith\t", [str(x) for x in evaled_args]
+
+        # extend the Environment with the new frame
+        new_env = Environment(evaled_vars, evaled_args, env)
+
+        # eval the body in the new Environment
         return self.body.scm_eval(new_env)
     
     def scm_eval(self, env):
