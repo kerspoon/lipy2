@@ -135,7 +135,9 @@ def if_func(args, env):
 # (lambda (<param1> ... <paramN>) <body1> ... )
 # (lambda <param> <body1> ... )
 # 
-# make a procedure.
+# make a procedure, <parameters> can be a symbol, proper-list or 
+# dotted-list. when evaluated returns the value of (eval <bodyN>) 
+# in an environment where <parameters> are bound to the arguments.
 # 
 # example:
 #   #FUN <= (lambda (x) (+ 3 x))
@@ -297,3 +299,20 @@ def make_basic_environment():
 basic_environment = make_basic_environment()
 
 # -----------------------------------------------------------------------------
+
+
+
+# anything that can be called or is stored in the envorinment needs to have its types checked. 
+
+# You can call something currently one of 3 ways.
+#   defined in function.py (special form)
+#   LispLambda.__call_
+#   LispClass.__call_
+
+# you can change the environment by:
+#   define
+#   set!
+
+# you can also chencge things in the environment through 
+#   class-set!
+

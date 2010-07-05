@@ -114,17 +114,21 @@ In the child class that was defined there are now 5 parameters and no slots. Any
 To Do
 =====
 
-1. Add comments to lexer
-2. The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. It will do for now.
-3. It would be nice to make classes a bit less dynamic. Maybe something like 
+1. The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. It will do for now.
+1. It would be nice to make classes a bit less dynamic. Maybe something like 
 
     (class-final point length)  
 
 means that the point.length cannot be changed in this or in any subclasses created after it was set.
 
-4. I have no idea how to do type checking yet. Particularly as python doesn't have it by default either. 
+1. I have no idea how to do type checking yet. Particularly as python doesn't have it by default either. 
 
-5. could make the following a macro to make creating instance like classes easier.
+1. could make the following a macro to make creating instance like classes easier.
 
     (new p1 (point) 'x 4 'y 5) -- define p1 as a subclass of point with x=4 y=5
 
+
+Links
+====
+
+http://hyperpolyglot.wikidot.com/lisp

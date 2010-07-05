@@ -1,39 +1,382 @@
 
-Things to add
+Definitions
 ==============
 
-^ / * eq equal <> not and or read assert
+
+Basic Scheme Grammar
+--------------------
+
+    sexp   ==: symbol | int | string | list
+    list   ==: '(' sexp* ('.' sexp)? ')'
+    symbol ==: (alpha | sym) atom*
+    int    ==: ('+'|'-')? [0-9]*
+    string ==: '"' (atom | whitespace)* '"'
+
+    sym    ==: [/*+-^|&=.!<>%\[\]]
+    alpha  ==: [A-ZA-z]
+    num    ==: [0-9]
+    atom   ==: alpha | sym | num
+
+**todo**: there should be SchemeFloat and the quote syntax sugar
+
+Sugar
+----
+
+    'element --> (quote <exp>)
+    `element --> (quasiquote <exp>)
+    ,element --> (unquote <exp>)
+    ,@element --> (unquote-splicing <exp>)
+
+`(quasiquote <exp>)` eval any list in <exp> starting in unquote or unquote-splicing; leave the rest as-is.
 
 
-(define (length xs) 
-  (xs,  inject
-        0 
-        (lambda(x y) + x 1)))
+Basic Scheme Objects (& Helper Functions)
+-----------------------------------------
 
-(define (reverse xs)
-  (xs,  inject
-        '()
-        (flip cons)))
+    class Environment
+     
+    class Base
 
-(define (map f xs)
-  (xs,  foldr
-        (lambda(x y) cons (f x) y)
-        '()))
-(define (filter f xs)
-  (xs,  foldr
-        (lambda(x y) if (f x) (cons x y) y)
-        '()))
+    class None   :: Base
+    class Bool   :: Base
+    class Pair   :: Base
+    class Symbol :: Base
+    class Int    :: Base
+    class Str    :: Base
+    class Lambda :: Base
+    class Class  :: Base
+        private rvar parents :: Set Class
+        private var  params  :: Dict Str Base
+        private rvar slots   :: Set Str
+     
+        func init :: Set Class 'parents' -> Set Str 'params' -> Set Str 'slots' -> Class
+        func get  :: Str 'param' -> Base
+        func set  :: Str 'param' -> Base 'value' -> Nil
+        func call :: Str 'param' -> [Base] 'args' -> Base
 
-(define quick-sort (lambda(xs) 
-  if  (xs, null)
-      '()
-      (concat (concat (((xs, cdr), filter (curry >= (xs, car))), quick-sort)
-      (list (xs, car)))
-              (((xs, cdr), filter (curry < (xs, car))), quick-sort))))
+    rvar nil        :: None
+    rvar true       :: Bool
+    rvar false      :: Bool
+    rvar base-class :: Class
+    rvar base-env   :: Environment
 
-(define (max xs) (xs,  reduce (pick >)))
-(define (min xs) (xs,  reduce (pick <)))
-(define (sum xs)         (xs, reduce +  ))
-(define (product xs)     (xs, reduce *  ))
-(define (and xs)         (xs, reduce && ))
-(define (or  xs)         (xs, reduce || ))
+Arc-lisp
+----
+
+    (mac when (test . body)
+      `(if ,test (do ,@body)))
+
+    (mac do1 args
+      (w/uniq g
+        `(let ,g ,(car args)
+           ,@(cdr args)
+           ,g)))
+
+
+Interesting (Lisp Like) Programming languages
+====
+
+ + R6RS <http://www.r6rs.org/>
+ + Scheme <http://schemers.org/>
+ + Coke <http://piumarta.com/software/cola/coke.html>
+ + Arc <http://ycombinator.com/arc/tut.txt>
+ + LiPi2 <http://github.com/kerspoon/lipy2>
+ + Qi II <http://www.lambdassociates.org/qilisp.htm>
+ + Arc Fork <http://github.com/nex3/arc>
+ + Clojure <http://clojure.org/rationale>
+ + Dylan <http://double.co.nz/dylan/>
+ + CLOS <http://www.alu.org/mop/index.html>
+ + Cateye <http://github.com/nfjinjing/cateye>
+ + Yalfs <http://github.com/cmatei/yalfs>
+ + Scmobj <http://www.ccs.neu.edu/home/dorai/scmobj/scmobj.html>
+ + Swindle <http://www.barzilay.org/Swindle/>
+
+
+Scheme Functions
+====
+
+In no real order, these are things that would be great to have in this language. 
+
+ 1. basic lisp
+
+    nil true false
+    quote set! define
+    if lambda begin
+    call/cc
+
+ 2. maths
+
+    % + / * - ^ 
+    add div neg pow rem
+    += /= *= -= ^= %=
+    eadd ediv eneg epow erem
+    min max avg tot len abs
+    trunc round floor ceil
+    sin cos tan exp log2 log10
+    zero positive negative odd even
+
+ 3. logic
+
+    && || !!
+    and or not xor 
+    == != <= >= < > 
+    eq neq s_eq l_eq sml lrg 
+    equal
+     
+ 3. bit-shifting
+
+    & | ! 
+    band bor bnot bxor
+    << >> <| >|
+    shl shr rsl rsr
+     
+ 4. string methods
+
+    split find cat slice
+    startswith endswith
+    upper lower reverse
+    lstrip rstrip strip
+    isint isreal
+    replace ord chr
+     
+ 5. object orientated
+
+    list set dict class
+    new typeof subtype
+    [] . exists str 
+    copy deepcopy
+     
+ 6. file operations 
+
+    open close flush 
+    getline getchar getword
+    writeline writechar writeword
+    as_csv newline
+     
+ 7. list, set, and dict methods
+
+    push pop shift unshift
+    count append extend 
+    remove sort del index add 
+    in notin isdisjoint issubset 
+    issuperset union interestions
+    difference symmetric_difference
+    keys vales items update
+     
+ 8. functional
+
+    foldl foldr 
+    reduce map filter
+    flip curry compose id 
+    pick inject unfold
+     
+ 9. random
+
+    choice rand normal dice 
+     
+ 10. data types
+
+    float, decimal, bigint, rational, 
+    saturating, ringbuffer 
+
+ 11. others
+
+    assert, test, profile, time, documentation, 
+    networking, threads, sound, graphics, 
+    type-checking, import-file, eval, 
+    logging, parsing, exceptions, 
+    generator expressions, regexp,
+    operating system calls, macros
+
+
+
+
+Cool Lisp Features
+====
+
+
+pre/post conditions
+----
+
+    (defn constrained-sqr [x]
+        {:pre  [(pos? x)]
+         :post [(> % 16), (< % 225)]}
+        (* x x))
+
+functions of one argument
+----
+
+    arc> (map (fn (x) (+ x 10)) '(1 2 3))
+    (11 12 13)
+
+Since functions of one argument are so often used in Lisp programs,
+Arc has a special notation for them.  [... _ ...]  is an abbreviation
+for (fn (_) (... _ ...)).  So our first map example could have been
+written
+
+    arc> (map [+ _ 10] '(1 2 3))
+    (11 12 13)
+
+compose functions
+----
+
+You can compose functions by putting a colon between the names.
+I.e. (foo:bar x y) is equivalent to (foo (bar x y)).  Composed
+functions are convenient as arguments.
+
+    arc> (map odd:car '((1 2) (4 5) (7 9)))
+    (t nil t)
+
+types
+----
+
+You can find the types of things using type, and convert them to
+new types using coerce.
+
+    arc> (map type (list 'foo 23 23.5 '(a) nil car "foo" #\a))
+    (sym int num cons sym fn string char)
+    arc> (coerce #\A 'int)
+
+macro
+----
+
+    arc> (mac when (test . body)
+           (list 'if test (cons 'do body)))
+     
+    arc> (mac when (test . body)
+      `(if ,test (do ,@body)))
+
+The way to fix repeat is to use a symbol that couldn't occur in
+source code instead of x.  In Arc you can get one by calling the
+function uniq.  So the correct definition of repeat (and in fact
+the one in the Arc source) is
+
+    (mac repeat (n . body)
+      `(for ,(uniq) 1 ,n ,@body))
+
+If you need one or more uniqs for use in a macro, you can use w/uniq, 
+which takes either a variable or list of variables you want bound to
+uniqs.  Here's the definition of a variant of do called do1 that's
+like do but returns the value of its first argument instead of the
+last (useful if you want to print a message after something happens, 
+but return the something, not the message):
+
+    (mac do1 args
+      (w/uniq g
+        `(let ,g ,(car args)
+           ,@(cdr args)
+           ,g)))
+
+pattern matching on input
+----
+
+    ;trumped-up example
+    (defn argcount
+      ([] 0)
+      ([x] 1)
+      ([x y] 2)
+      ([x y & more] (+ (argcount x y) (count more))))
+    -> #'user/argcount
+    (argcount)
+    -> 0
+    (argcount 1)
+    -> 1
+    (argcount 1 2)
+    -> 2
+    (argcount 1 2 3 4 5)
+    -> 5
+
+lazy sequences
+----
+
+    (defn take [n coll]
+      (lazy-seq
+        (when (pos? n)
+          (when-let [s (seq coll)]
+           (cons (first s) (take (dec n) (rest s)))))))
+
+
+milti-methods
+----
+     
+    (defmulti encounter (fn [x y] [(:Species x) (:Species y)]))
+    (defmethod encounter [:Bunny :Lion] [b l] :run-away)
+    (defmethod encounter [:Lion :Bunny] [l b] :eat)
+    (defmethod encounter [:Lion :Lion] [l1 l2] :fight)
+    (defmethod encounter [:Bunny :Bunny] [b1 b2] :mate)
+    (def b1 {:Species :Bunny :other :stuff})
+    (def b2 {:Species :Bunny :other :stuff})
+    (def l1 {:Species :Lion :other :stuff})
+    (def l2 {:Species :Lion :other :stuff})
+    (encounter b1 b2)
+    -> :mate
+    (encounter b1 l1)
+    -> :run-away
+    (encounter l1 b1)
+    -> :eat
+    (encounter l1 l2)
+    -> :fight
+
+Qi permits currying and also partial applications, which generate Lisp closures.
+ (/. X Y (* X Y)) is an acceptable shorthand for (/. X (/. Y (* X Y))).
+
+    (define factorial
+        0 -> 1
+        X -> (* X (factorail (- X 1))))
+
+    (define mymember
+        _ [] -> []
+        X [X | Y] -> [X | Y]
+        X [_ | Y] -> (mymember X Y)
+
+    (define triples
+        [] -> []
+        [W X Y | Z] -> [[W X Y] | (triples Z)])
+
+    (define find-bigger
+        [X Y] -> X     where (> X Y)
+        [X Y] -> Y     where (> Y X))
+
+    (define member
+      {A --> [A] --> boolean}
+      _ [] -> false
+      X [X | _] -> true
+      X [_ | Y] -> (member X Y))
+
+Code
+====
+
+ + start with paul graham's arc lisp. <http://ycombinator.com/arc/tut.txt> (its macros are lovely)
+ + add in objects as per SICP
+ + use dot syntax for accessing namespaces.
+    
+    (a.b 5) # return the 5th element of a.b
+    (a.b 'mike) # return the element of a.b tagged 'mike
+
+ + add nfjinjing reader macros <http://github.com/nfjinjing/cateye>
+
+    'a ==> (quote a)
+    (!a b) ==> (define a b)
+    (| x ... | y ...) ==> (lambda (x ...) y ...)
+
+ + could add multiple dispatch by making a macro called multi-func 
+
+    ;; define + to be a multiple dispatch function
+    (multi-define +) 
+
+    ;; curried function that is true if every y is an x
+    (! all-is (curry (|x y| (all y x))))
+
+    ;; when + is called with Int dispatch to +Int
+    (multi-add + (all-is Int) +Int)
+
+    ;; when + is called with Int dispatch to +Int
+    (multi-add + (all-is Float) +Float)
+
+    ;; when + is called with anything else dispatch to +Mixed
+    (multi-add + nil +Mixed)
+
+ + other ideas
+    (a.b [1:2:3]) # like python a.b[1:2:3]
+    [a for b in c if d] ==> list-comprehension
+
