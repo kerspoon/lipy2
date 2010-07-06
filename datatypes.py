@@ -100,12 +100,13 @@ def rest(args):
 # ------------------------------------------------------------------------------
 
 class LispLambda(object):
-    def __init__(self, scm_vars, body):
+    def __init__(self, scm_vars, body, macro=False):
         """Procedure :: SchemeBase -> LispPair"""
         
         # print "vars\t", scm_vars
 
         self.body = cons(mksym("begin"), body)
+        self.macro = macro
 
         if scm_vars is nil:
             self.scm_vars = [nil]
@@ -122,20 +123,24 @@ class LispLambda(object):
         
         if debug:
             print "lambda-init"
-            print "\tvars\t", scm_vars
-            print "\tvars\t", self.scm_vars
+            print "\told vars\t", scm_vars
+            print "\tnew vars\t", self.scm_vars
+            print "\tbody\t", self.body
 
     def __call__(self, args, env):
         """__call__ :: SchemePair -> Environment"""
 
         # eval everything
-        evaled_args = [arg.scm_eval(env) for arg in to_list(args)]
-
+        if self.macro:
+            evaled_args = to_list(args)
+        else:
+            evaled_args = [arg.scm_eval(env) for arg in to_list(args)]
+        
         if debug:
             print "lambda-call"
-            print "\tvars\t", self.scm_vars
-            print "\targs\t", args
-            print "\tcall\t", [str(x) for x in evaled_args]
+            print "\tpre vars\t", self.scm_vars
+            print "\tpre args\t", args
+            print "\tevl args\t", [str(x) for x in evaled_args]
 
         if self.scm_vars[-1] is nil:
             # remove the ending nil
@@ -152,14 +157,21 @@ class LispLambda(object):
         assert len(evaled_vars) == len(evaled_args)
             
         if debug:
-            print "\tcall\t", [str(x) for x in evaled_vars]
-            print "\twith\t", [str(x) for x in evaled_args]
+            print "\tcll vars\t", [str(x) for x in evaled_vars]
+            print "\tcll args\t", [str(x) for x in evaled_args]
 
         # extend the Environment with the new frame
         new_env = Environment(evaled_vars, evaled_args, env)
 
-        # eval the body in the new Environment
-        return self.body.scm_eval(new_env)
+        if self.macro:
+            # eval in a the new environment
+            evaled_mac = self.body.scm_eval(new_env)
+            if debug: print "\tcll mac\t", evaled_mac
+            # call in the old one!
+            return evaled_mac.scm_eval(env)
+        else:
+            # eval the body in the new Environment
+            return self.body.scm_eval(new_env)
     
     def scm_eval(self, env):
         return mksym("<#procedure#>")

@@ -54,9 +54,10 @@ Special Forms
 
 There are currently only two DataTypes that do this: 
 
- 1. LispLambda is obviously the normal form of apply. It evaluares all the arguments and calls the closure with the environment that has bound the newly evaluated arguments.
+ 1. LispLambda is obviously the normal form of apply. It evaluares all the arguments and calls the closure with the environment that has bound the newly evaluated arguments. if it is created as a macro then it doesn't eval the args but evals the body in a new frame, it then evals the result in the old frame. 
 
  2. LispClass turns each class into a special form that looks up the specified name in the classes slots.
+
 
 It is possible to make a new data-type that does anything when instance of it are called. The only caveat is that there is no distinction between compile time, macro time and run time as there is in other implementations. Everything is done when called. But as the call mechanism as described is so dynamic it *should* be able to cope. In fact the only thing needed to create simple macros (other than make quasiquote etc.) is to not evaluate the arguments before a lambda is called. 
 
@@ -104,6 +105,8 @@ Because it has no slots the functions can be called as follows:
 
 Note how calling a function you must use the class(instance) name twice -- this is messy and should change. 
 
+
+
 In the child class that was defined there are now 5 parameters and no slots. Any of the parameters can be changed including function but that doesn't change it for the base class or indeed other derived points hence calling the folling two may give completly different results even if they are both a subclass of `point`:
 
     ((p1 sum) p1 p2)
@@ -114,21 +117,27 @@ In the child class that was defined there are now 5 parameters and no slots. Any
 To Do
 =====
 
-1. The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. It will do for now.
+1. could make the following a macro to make creating instance like classes easier. Each bit works but it would be a lot better if it worked together
+
+    (new p1 (point) 'x 4 'y 5) -- define p1 as a subclass of point with x=4 y=5
+
+    (define <name> (class <parents> () ()))
+
+1. having the quasi-quote special forms would greatly help programming the macros I want.
+
+1. let would be a very useful macro.
+
 1. It would be nice to make classes a bit less dynamic. Maybe something like 
 
     (class-final point length)  
 
 means that the point.length cannot be changed in this or in any subclasses created after it was set.
 
-1. I have no idea how to do type checking yet. Particularly as python doesn't have it by default either. 
-
-1. could make the following a macro to make creating instance like classes easier.
-
-    (new p1 (point) 'x 4 'y 5) -- define p1 as a subclass of point with x=4 y=5
+1. The syntax for classes is a bit messy. I still havent decided the best way to call their functions, access their elements and change their elements. It will do for now.
 
 
 Links
 ====
 
 http://hyperpolyglot.wikidot.com/lisp
+

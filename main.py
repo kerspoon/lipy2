@@ -69,9 +69,9 @@ def testall():
         ("nil"       , "(define m 2)" ),
         ("nil"       , "(define (add8 y) (+ 8 y) )" ),
         ("nil"       , "(define (getspoon) 'spoon )" ),
-        ("nil"       , "(define (mac x y z)  (+ x (* y z) ))" ),
+        ("nil"       , "(define (rac x y z)  (+ x (* y z) ))" ),
         ("10"        , "(add8 m)" ),
-        ("1001"      , "(mac 1 10 100)" ),
+        ("1001"      , "(rac 1 10 100)" ),
         ("y"         , "(if true 'y 'n)" ),
         ("y"         , "(if true 'y)" ),
         ("nil"       , "(if false 'y)" ),
@@ -199,20 +199,28 @@ def testall():
         # -------------------------------------- Class
         ("<#class#>"         , "class-base" ),
         ("nil"               , "(define point (class (class-base) (x y) (length total thing)))"),
-        ("nil"               , "(class-set! point length 2)"),
-        ("nil"               , "(class-set! point total (lambda (self) (+ (self _x) (self _y))))"),
-        ("nil"               , "(class-set! point thing (lambda (self mm) (+ mm ((self total) self))))"),
+        ("nil"               , "(class-set! point 'length 2)"),
+        ("nil"               , "(class-set! point 'total (lambda (self) (+ (self _x) (self _y))))"),
+        ("nil"               , "(class-set! point 'thing (lambda (self mm) (+ mm ((self total) self))))"),
         ("2"                 , "(point length)"),
         ("<#procedure#>"     , "(point total)"),
         ("nil"               , "(define p1 (class (point) () ()))"),
-        ("nil"               , "(class-set! p1 _x 4)"),
-        ("nil"               , "(class-set! p1 _y 6)"),
+        ("nil"               , "(class-set! p1 '_x 4)"),
+        ("nil"               , "(class-set! p1 '_y 6)"),
         ("4"                 , "(p1 _x)"),
         ("6"                 , "(p1 _y)"),
         ("<#procedure#>"     , "(p1 total)"),
         ("10"                , "((point total) p1)"),
         ("10"                , "((p1 total) p1)"),
         # ("110"               , "(p1 thing 100)"),
+        # -------------------------------------- Macros
+        ("<#procedure#>" , "(mac (yyx) (+ 3 yyx))" ),
+        ("3"             , "((mac (x) x) (+ 1 2))" ),
+        ("nil"           , "(define ggg 835)" ),
+        ("835"           , "((mac (ggg) 'ggg) (+ 1 2))" ),
+        ("nil"           , "(define when (mac (test . body) (list 'if test (cons 'begin body))))" ),
+        ("jam"           , "(when (= 4 4) 'jam)" ),
+        ("nil"           , "(when (= 3 4) 'jam)" ),
         # -------------------------------------- Done
         ("nil"         , "()" )]
 
@@ -251,19 +259,52 @@ testall()
 
 def main():
     inp = """
-(display "----- Thing -----")
-(define point (class (class-base) (x y) (length total)))
+; (define (list . x) x)
+"----- START -----"
+
+(define new (mac (name parent . init-data)
+             (list 'define name (list 'class (list parent) nil nil))))
+
+(define point (class (class-base) (x y) (length total thing)))
+"----- a -----"
+( define p1 ( class ( point ) nil nil ) )
+(class-set! p1 'x 4)
+(class-set! p1 'y 10)
+(p1 x)
+"----- b -----"
+(new p2 point)
+(class-set! p2 'x 6)
+(class-set! p1 'y 100)
+(p2 x)
+"----- END -----"
+
+; (set-all-things p1 'x 1 'y 2)
+(define (set-all-things name things)
+  ; key <- (car things)
+  ; val <- (car (cdr things))
+  ; rest <- (car (cdr (cdr things)))
+  (if (is things nil)
+      nil
+    (begin
+      (class-set! name (car things) (car (cdr things)))
+      (set-all-things name (cdr (cdr things))))))
+
+"-----  -----"
+(set-all-things p1 '(x -456 y -789))
+"-----  -----"
+(p1 x)
+(p1 y)
 """
 
     env = Environment([], [], basic_environment)
 
     if True:
-        for result in repl(env,parse(tokenize([inp]))):
-            print "$", result
-
-    if True:
         with open("prelude.scm") as prelude:
             read_file(prelude, env)
+
+    if True:
+        for result in repl(env,parse(tokenize([inp]))):
+            print "$", result
 
     if False:
         for result in repl(env,parse(tokenize(reader_raw()))):

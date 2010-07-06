@@ -214,12 +214,42 @@ def class_set_func(args, env):
     param_name = first(rest(args))
     value = first(rest(rest(args)))
 
+
     evaled_class = class_name.scm_eval(env)
+    evaled_param = param_name.scm_eval(env)
     evaled_value = value.scm_eval(env)
 
-    evaled_class.parameters[param_name] = evaled_value
+    print "class", class_name, evaled_class
+    print "param", param_name, evaled_param
+    print "value", value, evaled_value
+
+    evaled_class.parameters[evaled_param] = evaled_value
 
     return nil
+
+# -----------------------------------------------------------------------------
+# Macro
+# 
+# (mac (<param1> ... <paramN>) <body1> ... )
+# (mac <param> <body1> ... )
+# 
+# make a procedure, <parameters> can be a symbol, proper-list or 
+# dotted-list. when evaluated returns the value of (eval <bodyN>) 
+# in an environment where <parameters> are bound to the arguments.
+# 
+# example:
+#   #FUN <= (mac (x) (+ 3 x))
+#   (+ 1)<= ((mac (x) x) (+ 1))
+#   #FUN <= (define when (mac (test . body) (list ('if test (cons 'begin body))))
+#   jam  <= (when (= 4 4) 'jam)
+# -----------------------------------------------------------------------------
+ 
+def macro_func(args, env):
+
+    param = first(args)
+    body = rest(args)
+
+    return LispLambda(param, body, True)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -271,6 +301,8 @@ def make_basic_environment():
         ("class"      , class_func),
         ("class-set!" , class_set_func),
         ("class-base" , class_base),
+
+        ("mac"  , macro_func),
 
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),
