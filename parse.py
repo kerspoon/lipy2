@@ -88,7 +88,8 @@ test_isnumber()
 # -----------------------------------------------------------------------------
 
 quote = mksym("quote")
-
+quasiquote = mksym("quasiquote")
+unquote = mksym("unquote")
 
 def valid_symbol_name(text):
     return set(text).issubset(normalchars)
@@ -104,6 +105,10 @@ def inner_parse(tokens):
 
     if tok == "'":
         return from_list([quote, inner_parse(tokens), nil])
+    elif tok[0] == '`':
+        return from_list([quasiquote, inner_parse(tokens), nil])
+    elif tok[0] == ',':
+        return from_list([unquote, inner_parse(tokens), nil])
     elif tok[0] == '"':
         return LispString(tok[1:-1])
     elif tok == "(":

@@ -20,7 +20,7 @@ def readtoken(text):
     if text[0] in specialtokens:
         return text[0], text[1:]
 
-    pattern = re.compile("([()'.]|[\w<>%=!^&?*+/-]+|\"[^\"]*\"|;.*)")
+    pattern = re.compile("([()'.`,]|[\w<>%=!^&?*+/-]+|\"[^\"]*\"|;.*)")
     result = pattern.match(text)
     
     assert result, "invalid input: '" + text + "'"

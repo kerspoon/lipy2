@@ -221,10 +221,39 @@ def testall():
         ("nil"           , "(define when (mac (test . body) (list 'if test (cons 'begin body))))" ),
         ("jam"           , "(when (= 4 4) 'jam)" ),
         ("nil"           , "(when (= 3 4) 'jam)" ),
+        # -------------------------------------- Quasiquote
+        ("a"                 , "(quasiquote a)" ),
+        ("( a )"             , "(quasiquote (a))" ),
+        ("( a b )"           , "(quasiquote (a b))" ),
+        ("( a b c )"         , "(quasiquote (a b c))" ),
+        ("( a . b )"         , "(quasiquote (a . b))" ),
+        ("( a b c )"         , "(quasiquote (a b c))" ),
+        ("( a b . c )"       , "(quasiquote (a b . c))" ),
+        ("( a b a b )"       , "(quasiquote (a b . (a b)))" ),
+        ("( quote a )"       , "(quasiquote 'a)" ),
+        ("a"                 , "(quasiquote (unquote 'a))" ),
+        ("( ( quote a ) b )" , "(quasiquote ( 'a (unquote 'b)))" ),
+        ("( list 3 4 )"      , "(quasiquote (list (unquote (+ 1 2)) 4))" ),
+        ("( a b 3 4 )"       , "(quasiquote (a . (b (unquote (+ 1 2)) 4)))" ),
+        ("( a ( quasiquote ( b ( unquote c ) d ) ) e )" , 
+         "(quasiquote ( a (quasiquote ( b (unquote c) d)) e ))" ),
+        # -------------------------------------- Quasiquote (Sugar)
+        ("a"                 , "`a" ),
+        ("( a )"             , "`(a)" ),
+        ("( a b )"           , "`(a b)" ),
+        ("( a b c )"         , "`(a b c)" ),
+        ("( a . b )"         , "`(a . b)" ),
+        ("( a b c )"         , "`(a b c)" ),
+        ("( a b . c )"       , "`(a b . c)" ),
+        ("( a b a b )"       , "`(a b . (a b))" ), # tested on plt-scheme
+        ("( quote a )"       , "`'a" ),
+        ("a"                 , "`,'a" ),
+        ("( ( quote a ) b )" , "`( 'a ,'b)" ),
+        ("( list 3 4 )"      , "`(list ,(+ 1 2) 4)" ),
+        ("( a b 3 4 )"       , "`(a . (b ,(+ 1 2) 4))" ),
+        ("( a ( quasiquote ( b ( unquote c ) d ) ) e )" , "`(a`(b,c d)e)" ),
         # -------------------------------------- Done
         ("nil"         , "()" )]
-
-    # ("nil"           , "(define (list . x) x)"),
 
     env = Environment([], [], basic_environment)
 
@@ -262,38 +291,40 @@ def main():
 ; (define (list . x) x)
 "----- START -----"
 
-(define new (mac (name parent . init-data)
-             (list 'define name (list 'class (list parent) nil nil))))
+;;  
+;; (define new (mac (name parent . init-data)
+;;              (list 'define name (list 'class (list parent) nil nil))))
+;;  
+;; (define point (class (class-base) (x y) (length total thing)))
+;; "----- a -----"
+;; ( define p1 ( class ( point ) nil nil ) )
+;; (class-set! p1 'x 4)
+;; (class-set! p1 'y 10)
+;; (p1 x)
+;; "----- b -----"
+;; (new p2 point)
+;; (class-set! p2 'x 6)
+;; (class-set! p1 'y 100)
+;; (p2 x)
+;; "----- END -----"
+;;  
+;; ; (set-all-things p1 'x 1 'y 2)
+;; (define (set-all-things name things)
+;;   ; key <- (car things)
+;;   ; val <- (car (cdr things))
+;;   ; rest <- (car (cdr (cdr things)))
+;;   (if (is things nil)
+;;       nil
+;;     (begin
+;;       (class-set! name (car things) (car (cdr things)))
+;;       (set-all-things name (cdr (cdr things))))))
+;;  
+;; "-----  -----"
+;; (set-all-things p1 '(x -456 y -789))
+;; "-----  -----"
+;; (p1 x)
+;; (p1 y)
 
-(define point (class (class-base) (x y) (length total thing)))
-"----- a -----"
-( define p1 ( class ( point ) nil nil ) )
-(class-set! p1 'x 4)
-(class-set! p1 'y 10)
-(p1 x)
-"----- b -----"
-(new p2 point)
-(class-set! p2 'x 6)
-(class-set! p1 'y 100)
-(p2 x)
-"----- END -----"
-
-; (set-all-things p1 'x 1 'y 2)
-(define (set-all-things name things)
-  ; key <- (car things)
-  ; val <- (car (cdr things))
-  ; rest <- (car (cdr (cdr things)))
-  (if (is things nil)
-      nil
-    (begin
-      (class-set! name (car things) (car (cdr things)))
-      (set-all-things name (cdr (cdr things))))))
-
-"-----  -----"
-(set-all-things p1 '(x -456 y -789))
-"-----  -----"
-(p1 x)
-(p1 y)
 """
 
     env = Environment([], [], basic_environment)

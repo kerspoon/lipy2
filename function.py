@@ -219,9 +219,9 @@ def class_set_func(args, env):
     evaled_param = param_name.scm_eval(env)
     evaled_value = value.scm_eval(env)
 
-    print "class", class_name, evaled_class
-    print "param", param_name, evaled_param
-    print "value", value, evaled_value
+    # print "class", class_name, evaled_class
+    # print "param", param_name, evaled_param
+    # print "value", value, evaled_value
 
     evaled_class.parameters[evaled_param] = evaled_value
 
@@ -242,6 +242,7 @@ def class_set_func(args, env):
 #   (+ 1)<= ((mac (x) x) (+ 1))
 #   #FUN <= (define when (mac (test . body) (list ('if test (cons 'begin body))))
 #   jam  <= (when (= 4 4) 'jam)
+#
 # -----------------------------------------------------------------------------
  
 def macro_func(args, env):
@@ -250,6 +251,83 @@ def macro_func(args, env):
     body = rest(args)
 
     return LispLambda(param, body, True)
+
+
+# -----------------------------------------------------------------------------
+# quasiquote
+# 
+# (quasiquote <param>)
+#
+# If no `unquote` appear within the <param>, the result of is equivalent to 
+# evaluating quote. If `unquote` does appears the expression following the 
+# comma is evaluated and its result is inserted into the structure instead of 
+# the comma and the expression. 
+#
+# It is basically a completly new way to eval a sexp. One where only unquote
+# and unquote-splicing and quasiquote really do anything interesting. 
+#
+# 
+# example:
+# 
+#   'a                 --> a
+#   (quote a b)        --> ERROR (too many args)
+#   `a                 --> a
+#   `,a                --> eval(a)
+#   (quasiquote a b)   --> ERROR (too many args)
+#   `(a (unquote d b)) --> ERROR (too many args)
+#   (unquote a b)      --> ERROR (not in quasiquote)
+#   `(a)               --> (a)
+#   `(a ,c)            --> (a eval(c))
+#   `(a (b ,c))        --> (a (b eval(c)))
+#   ``,a               --> `,a
+#   `(list ,(+ 1 2) 4) -->  (list 3 4)
+#   `(a `(b ,c) d)     --> (a `(b ,c) d)
+#
+# -----------------------------------------------------------------------------
+
+def unquote_func(args, env):
+    raise Exception("Cannot call unquote outsite of quasiquote")
+
+def quasiquote_func(args, env):
+    assert rest(args) is nil, "ERROR (too many args in quasiquote)"
+    arg = first(args)
+
+    if not isinstance(arg, LispPair):
+        return arg
+    else:
+        # build up new list with 'unquote' evaluated
+        def inner_qq(inargs):
+            # print "in args", inargs
+            if first(inargs) is mksym("unquote"):
+                # (unquote x) -> (eval x)
+                assert rest(rest(inargs)) is nil
+                return first(rest(inargs)).scm_eval(env)
+            elif first(inargs) is mksym("quasiquote"):
+                # (quasiquote x) -> (quasiquote x)
+                assert rest(rest(inargs)) is nil
+                return inargs
+            elif first(inargs) is mksym("unquote-splicing"):
+                raise Exception("Not implemented")
+            else:
+                # recurse the list checking each elm
+                # return the newly formed list
+                newlist = []
+                while isinstance(inargs, LispPair):
+                    if isinstance(first(inargs), LispPair):
+                        newlist.append(inner_qq(first(inargs)))
+                    else:
+                        newlist.append(first(inargs))
+                    inargs = rest(inargs)
+                
+                # deal with the final element (which is probably a nil)
+                if isinstance(inargs, LispPair):
+                    newlist.append(inner_qq(inargs))
+                else:
+                    newlist.append(inargs)
+                # put the list back into sexp
+                return from_list(newlist)
+
+        return inner_qq(arg)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -302,7 +380,9 @@ def make_basic_environment():
         ("class-set!" , class_set_func),
         ("class-base" , class_base),
 
-        ("mac"  , macro_func),
+        ("mac"         , macro_func),
+        ("quasiquote"  , quasiquote_func),
+        ("unquote"     , unquote_func),
 
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),
