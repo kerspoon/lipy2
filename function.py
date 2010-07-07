@@ -226,6 +226,29 @@ def class_set_func(args, env):
     return nil
 
 # -----------------------------------------------------------------------------
+# class-private!
+# 
+# (class-private! <class-name> <param> )
+# 
+# make the chosen parameter in the class read only.
+#
+# (class-private! point 'length)
+# (class-set! point 'length 4) --> ERROR
+#
+# -----------------------------------------------------------------------------
+ 
+def class_private_func(args, env):
+
+    cls = first(args).scm_eval(env)
+    param = first(rest(args)).scm_eval(env).name
+
+    assert rest(rest(args)) is nil
+    assert isinstance(cls, LispClass)
+    assert isinstance(cls, LispClass)
+    cls.make_read_only(param)
+    return nil
+    
+# -----------------------------------------------------------------------------
 # Macro
 # 
 # (mac (<param1> ... <paramN>) <body1> ... )
@@ -249,7 +272,6 @@ def macro_func(args, env):
     body = rest(args)
 
     return LispLambda(param, body, True)
-
 
 # -----------------------------------------------------------------------------
 # quasiquote
@@ -374,9 +396,10 @@ def make_basic_environment():
         ("lambda", lambda_func),
         ("begin" , begin_func),
 
-        ("class"      , class_func),
-        ("class-set!" , class_set_func),
-        ("class-base" , class_base),
+        ("class"          , class_func),
+        ("class-set!"     , class_set_func),
+        ("class-private!" , class_private_func),
+        ("class-base"     , class_base),
 
         ("mac"         , macro_func),
         ("quasiquote"  , quasiquote_func),

@@ -18,9 +18,9 @@ Main Goals
 ----
 
  + Objected Orientated 
- + Type Checked
  + Good Module System (import include etc.)
- + Simple Macros (as per arc-lisp)
+ + Simple Macros
+ + Type Checked
 
 Side Goals
 ----
@@ -109,18 +109,14 @@ In the child class that was defined there are now 5 parameters and no slots. Any
     ((p1 sum) p1 p2)
     ((p2 sum) p1 p2)
 
+To overcome this there is another function called `class-private!`. This makes sure that the specific parameter cannot be changed in that class or any subclasses created after it was set. 
+
 
 To Do
 =====
 
 1. Data-types should own their own functions. Move the maths into
 LispInteger. Have function.py do all the type checking. 
-
-1. It would be nice to make classes a bit less dynamic. Maybe something like 
-
-    (class-final point length)  
-
-means that the point.length cannot be changed in this or in any subclasses created after it was set.
 
 1. Think about a import function that create a (finalised) class containing all the functions of that file.
 

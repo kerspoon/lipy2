@@ -231,7 +231,6 @@ class LispClass(LispBase):
             print "\tparameters", parameters
             print "\tslots", slots
 
-        self.readonly = []
 
         # something can't be both a parameter and a slot
         assert set(parameters).isdisjoint(set(slots))
@@ -261,11 +260,16 @@ class LispClass(LispBase):
             for p,v in sc.parameters.items():
                     self.parameters[p] = v
 
+        self.readonly = set()
+        for sc in self.parents:
+            self.readonly |= sc.readonly
+        
         if debug:
             print "make-class:"
             print "\tparents", self.parents
             print "\tparameters", self.parameters
             print "\tslots", self.slots
+            print "\tread", self.readonly
 
     def __call__(self, args, env):
         """__call__ :: SchemePair -> Environment"""
@@ -293,7 +297,7 @@ class LispClass(LispBase):
     
     def make_read_only(self, param_name, value = True):
         assert (param_name in self.parameters) or (param_name in self.slots)
-        self.readonly = value
+        self.readonly.add(param_name)
         
     def scm_eval(self, env): return mksym("<#class#>")
     def __str__(self): return "<#class#>"
