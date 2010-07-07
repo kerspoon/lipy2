@@ -135,6 +135,9 @@ def inner_parse(tokens):
     else:
         # we have a symbol 
         assert valid_symbol_name(tok), "invalid atom in symbol '%s'" % tok
+        if tok == "nil": return nil
+        if tok == "true": return true
+        if tok == "false": return false
         return mksym(tok)
 
 def kill_comments(iterable):
