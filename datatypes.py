@@ -50,6 +50,7 @@ class LispPair(LispBase):
     
     def scm_eval(self, env):
         func = self.first.scm_eval(env)
+        assert hasattr(func, '__call__'), "cannot call '%s' in %s" % (func,self)
         return func(self.rest, env)
 
     def __str__(self):
@@ -102,8 +103,6 @@ def rest(args):
 class LispLambda(object):
     def __init__(self, scm_vars, body, macro=False):
         """Procedure :: SchemeBase -> LispPair"""
-        
-        # print "vars\t", scm_vars
 
         self.body = cons(mksym("begin"), body)
         self.macro = macro
@@ -239,12 +238,12 @@ class LispClass(LispBase):
         self.parameters = {}
 
         for p in parameters:
-            self.parameters[p] = "nil"
+            self.parameters[p] = nil
 
         for sc in self.parents:
             for s in sc.slots:
                 if s not in self.slots:
-                    self.parameters[s] = "nil"
+                    self.parameters[s] = nil
 
             for p,v in sc.parameters.items():
                     self.parameters[p] = v
@@ -263,7 +262,9 @@ class LispClass(LispBase):
             print "\targs", args
 
         # find the parameter name
-        param = self.parameters[first(args)]
+        param_name = first(args).name
+        assert param_name in self.parameters, param_name
+        param = self.parameters[param_name]
 
         # return as data when only one arg
         if rest(args) is nil: 
@@ -280,4 +281,5 @@ class LispClass(LispBase):
 
 class_base = LispClass(set(), set(), set())
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+

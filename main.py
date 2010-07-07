@@ -13,9 +13,9 @@ def repl(env, parser):
        as function) then prints it's result"""
 
     for sexp in parser:
-        if DEBUG: print "#< ", str(sexp)
+        # if DEBUG: print "#< ", str(sexp)
         result = sexp.scm_eval(env)
-        if DEBUG: print "#> ", str(result)
+        # if DEBUG: print "#> ", str(result)
         yield str(result)
 
 
@@ -118,8 +118,8 @@ def testall():
         ("false"        , "(= 5 4)"),
         ("false"        , "(= 4 5)"),
         ("true"         , "(= 5 5)"),
-        # -------------------------------------- Recurse (works but spams output)
-        # ("nil"         , "(define (xxx x) (display2 'in) (if (< x 10) (xxx (+ x 1))))"),
+        # -------------------------------------- Recurse (works but spams)
+        ("nil"         , "(define (xxx x) (display 'in) (if (< x 10) (xxx (+ x 1))))"),
         # ("nil"         , "(xxx 0)"),
         # ("nil"         , "(xxx 1)"),
         # ("nil"         , "(xxx 9)"),
@@ -198,7 +198,7 @@ def testall():
  "( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )"),
         # -------------------------------------- Class
         ("<#class#>"         , "class-base" ),
-        ("nil"               , "(define point (class (class-base) (x y) (length total thing)))"),
+        ("nil"               , "(define point (class (class-base) (_x _y) (length total thing)))"),
         ("nil"               , "(class-set! point 'length 2)"),
         ("nil"               , "(class-set! point 'total (lambda (self) (+ (self _x) (self _y))))"),
         ("nil"               , "(class-set! point 'thing (lambda (self mm) (+ mm ((self total) self))))"),
@@ -324,7 +324,6 @@ def main():
 ;; "-----  -----"
 ;; (p1 x)
 ;; (p1 y)
-
 
 
 """

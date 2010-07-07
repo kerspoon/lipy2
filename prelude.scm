@@ -147,5 +147,30 @@
 
 (let ((a 1) (b 2)) (begin (display a) (display b)))
 
-(display "-------------------------------------------------------------------")
+(display "---------------------------------------------------------------")
+(display "-------------------------AAAAAAAAAAAAAAA-----------------------")
+(display "---------------------------------------------------------------")
+ 
+(define vec-3d (class (class-base) (x y z) (length str tot x-add)))
+ 
+(class-set! vec-3d 'length  3)
+(class-set! vec-3d 'tot (lambda(self) (+ (+ (self x) (self y)) (self z))))
+(class-set! vec-3d 'str (lambda(self) (display (list (self x) (self y) (self z)))))
+(class-set! vec-3d 'x-add (lambda(self val) (+ (self x) val)))
 
+(display (vec-3d length))
+
+(display "---------------------------------------------------------------")
+(display "-------------------------BBBBBBBBBBBBBBB-----------------------")
+(display "---------------------------------------------------------------")
+ 
+(new p9 vec-3d x 1 y 2 z 3)
+(display (p9 x))
+(display (p9 y))
+(display (p9 z))
+((p9 str) p9)
+(display (p9 length))
+
+(display "---------------------------------------------------------------")
+(display "-------------------------CCCCCCCCCCCCCCC-----------------------")
+(display "---------------------------------------------------------------")
