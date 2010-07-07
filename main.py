@@ -291,41 +291,6 @@ def main():
 ; (define (list . x) x)
 "----- START -----"
 
-;;  
-;; (define new (mac (name parent . init-data)
-;;              (list 'define name (list 'class (list parent) nil nil))))
-;;  
-;; (define point (class (class-base) (x y) (length total thing)))
-;; "----- a -----"
-;; ( define p1 ( class ( point ) nil nil ) )
-;; (class-set! p1 'x 4)
-;; (class-set! p1 'y 10)
-;; (p1 x)
-;; "----- b -----"
-;; (new p2 point)
-;; (class-set! p2 'x 6)
-;; (class-set! p1 'y 100)
-;; (p2 x)
-;; "----- END -----"
-;;  
-;; ; (set-all-things p1 'x 1 'y 2)
-;; (define (set-all-things name things)
-;;   ; key <- (car things)
-;;   ; val <- (car (cdr things))
-;;   ; rest <- (car (cdr (cdr things)))
-;;   (if (is things nil)
-;;       nil
-;;     (begin
-;;       (class-set! name (car things) (car (cdr things)))
-;;       (set-all-things name (cdr (cdr things))))))
-;;  
-;; "-----  -----"
-;; (set-all-things p1 '(x -456 y -789))
-;; "-----  -----"
-;; (p1 x)
-;; (p1 y)
-
-
 """
 
     env = Environment([], [], basic_environment)

@@ -104,17 +104,17 @@ Because it has no slots the functions can be called as follows:
 
 Note how calling a function you must use the class(instance) name twice -- this is messy and should change. 
 
-
-
 In the child class that was defined there are now 5 parameters and no slots. Any of the parameters can be changed including functions but it doesn't change it for the base class or indeed other derived points hence calling the folling two may give completly different results even if they are both a subclass of `point`:
 
     ((p1 sum) p1 p2)
     ((p2 sum) p1 p2)
 
 
-
 To Do
 =====
+
+1. Data-types should own their own functions. Move the maths into
+LispInteger. Have function.py do all the type checking. 
 
 1. It would be nice to make classes a bit less dynamic. Maybe something like 
 

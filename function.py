@@ -191,8 +191,8 @@ def class_func(args, env):
     # turn to a list and remove the trailing nil
     # make the params and slots a string
     parents = to_list(first(args))[:-1]
-    slots = [str(x) for x in to_list(first(rest(args)))[:-1]]
-    params = [str(x) for x in to_list(first(rest(rest(args))))[:-1]]
+    slots = [x.name for x in to_list(first(rest(args)))[:-1]]
+    params = [x.name for x in to_list(first(rest(rest(args))))[:-1]]
 
     # lookup the parents
     evaled_parents = [parent.scm_eval(env) for parent in parents]
@@ -214,7 +214,6 @@ def class_set_func(args, env):
     param_name = first(rest(args))
     value = first(rest(rest(args)))
 
-
     evaled_class = class_name.scm_eval(env)
     evaled_param = param_name.scm_eval(env).name
     evaled_value = value.scm_eval(env)
@@ -223,9 +222,7 @@ def class_set_func(args, env):
     # print "param", param_name, evaled_param
     # print "value", value, evaled_value
 
-    assert evaled_param in evaled_class.parameters, "not a parameter: " + evaled_param
-    evaled_class.parameters[evaled_param] = evaled_value
-
+    evaled_class.set(evaled_param, evaled_value)
     return nil
 
 # -----------------------------------------------------------------------------
