@@ -197,22 +197,24 @@ def testall():
 ("( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )",
  "( ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ( quote ( lambda ( x ) ( list x ( list ( quote quote ) x ) ) ) ) )"),
         # -------------------------------------- Class
-        ("<#class#>"         , "class-base" ),
-        ("nil"               , "(define point (class (class-base) (_x _y) (length total thing)))"),
-        ("nil"               , "(class-set! point 'length 2)"),
-        ("nil"               , "(class-set! point 'total (lambda (self) (+ (self _x) (self _y))))"),
-        ("nil"               , "(class-set! point 'thing (lambda (self mm) (+ mm ((self total) self))))"),
-        ("2"                 , "(point length)"),
-        ("<#procedure#>"     , "(point total)"),
-        ("nil"               , "(define p1 (class (point) () ()))"),
+        ("<#class-1#>"       , "BaseClass" ),
+        ("nil"               , "(define Point (class BaseClass))"),
+        ("nil"               , "(class-define! Point '_x)"),
+        ("nil"               , "(class-define! Point '_y)"),
+        ("nil"               , "(class-define! Point 'length)"),
+        ("nil"               , "(class-define! Point 'total)"),
+        ("nil"               , "(class-define! Point 'thing)"),
+        ("nil"               , "(class-set! Point 'length 2)"),
+        ("nil"               , "(class-set! Point 'total (lambda () (+ (self _x) (self _y))))"),
+        ("nil"               , "(class-set! Point 'thing (lambda (mm) (+ mm (self total))))"),
+        ("2"                 , "(Point length)"),
+        ("nil"               , "(define p1 (class Point))"),
         ("nil"               , "(class-set! p1 '_x 4)"),
         ("nil"               , "(class-set! p1 '_y 6)"),
         ("4"                 , "(p1 _x)"),
         ("6"                 , "(p1 _y)"),
-        ("<#procedure#>"     , "(p1 total)"),
-        ("10"                , "((point total) p1)"),
-        ("10"                , "((p1 total) p1)"),
-        # ("110"               , "(p1 thing 100)"),
+        ("10"                , "(p1 total)"),
+        ("110"               , "(p1 thing 100)"),
         # -------------------------------------- Macros
         ("<#procedure#>" , "(mac (yyx) (+ 3 yyx))" ),
         ("3"             , "((mac (x) x) (+ 1 2))" ),
@@ -268,7 +270,7 @@ def testall():
         exp = list(exp)
 
         results = list(repl(env,exp))
-        assert len(results) == 1
+        assert len(results) == 1, str(results)
         res = results[0]
 
         if DEBUG: print "result   ", res

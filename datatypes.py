@@ -1,5 +1,6 @@
 
 from environment import Environment
+from copy import deepcopy
 
 debug = False
 
@@ -165,6 +166,7 @@ class LispLambda(object):
         if self.macro:
             # expand in a new env
             mac = self.expand_macro(args, env)
+            print "\tmacro\t", mac
             # call in the *old* one.
             return mac.scm_eval(env)
        
@@ -219,90 +221,186 @@ class LispInteger(LispBase):
     def scm_eval(self, env): return self
     def __str__(self): return str(self.num)
 
-# ----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class Permission(object):
+    def __init__(self, flags=None):
+        self.set_default()
+        if flags:
+            self.set_flags(flags)
+
+    def set_default(self):
+        self.class_read  = True
+        self.class_write = True
+        self.any_read    = True
+        self.any_write   = True
+        self.virtual     = False
+
+    def set_flags(self, flags):
+        # todo: could implement flags that set many things
+        #       such as read-only or private
+
+        assert set(flags) <= set(["class-read", "no-class-read", 
+                                  "class-write", "no-class-write", 
+                                  "any-read", "no-any-read", 
+                                  "any-write", "no-any-write", 
+                                  "virtual", "no-virtual",
+                                  "read-only", "private"])
+
+        if "class-read" in flags  : self.class_read  = True
+        if "class-write" in flags : self.class_write = True 
+        if "any-read" in flags    : self.any_read    = True 
+        if "any-write" in flags   : self.any_write   = True 
+        if "virtual" in flags     : self.virtual     = True 
+
+        if "no-class-read" in flags  : self.class_read  = False
+        if "no-class-write" in flags : self.class_write = False 
+        if "no-any-read" in flags    : self.any_read    = False 
+        if "no-any-write" in flags   : self.any_write   = False 
+        if "no-virtual" in flags     : self.virtual     = False 
+
+        if "read-only" in flags:
+            self.any_write = False
+            self.class_write = False
+
+        if "private" in flags:
+            self.any_read = False
+            self.any_write = False
+
+class Variable(object):
+    def __init__(self, permission, datatype=None, value=None):
+        self.permission = permission
+        self.datatype = datatype
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
 
 class LispClass(LispBase):
-    
-    def __init__(self, parents, parameters, slots):
-        
-        if debug:
-            print "pre-make-class:"
-            print "\tparents", parents
-            print "\tparameters", parameters
-            print "\tslots", slots
 
+    classid = 0
 
-        # something can't be both a parameter and a slot
-        assert set(parameters).isdisjoint(set(slots))
+    def __init__(self, parents):
+
+        # set id as incrementing number for output
+        LispClass.classid += 1
+        self.id = LispClass.classid
+
+        self.finalised = False
+        self.internal  = False
 
         # gather all super-classes and make unique
+        # might as well store the direct parents too
         self.parents = set(list(parents))
+        self.direct_parents = self.parents
         for parent in parents:
             self.parents |= parent.parents
-
-        # make sure they are unique
-        self.slots = set(list(slots))
-
-        # parameters are anything passed in and
-        # anything in superclass parameters & superclass slots.
-        # except the ones that are slots in this class
-        # they are start as nil
-        self.parameters = {}
-
-        for p in parameters:
-            self.parameters[p] = nil
-
-        for sc in self.parents:
-            for s in sc.slots:
-                if s not in self.slots:
-                    self.parameters[s] = nil
-
-            for p,v in sc.parameters.items():
-                    self.parameters[p] = v
-
-        self.readonly = set()
-        for sc in self.parents:
-            self.readonly |= sc.readonly
         
+        # inherit all parents' variables
+        # except virtual
+        self.variables = {}
+        for sc in self.parents:
+            for p, v in sc.variables.items():
+                # todo: is deepcopy(v) needed?
+                self.variables[p] = v
+                self.variables[p].permission.virtual = False
+
         if debug:
-            print "make-class:"
-            print "\tparents", self.parents
-            print "\tparameters", self.parameters
-            print "\tslots", self.slots
-            print "\tread", self.readonly
+            print self.get_info()
+
+    def get_info(self):
+        txt = "make-class %s:\n" % self
+        txt += "\tfinalised\t%d\n" % self.finalised
+        txt += "\tparents\t%s\n" % map(str, self.parents)
+        txt += "\tvariables\t%s\n" % str(self.variables)
+        return txt
+
+    def define(self, var, datatype=None, value=None):
+        # define :: Str 'var' -> Type 'type' -> None
+        assert not self.finalised, "can't `define` a finalised class"
+        
+        # give the default permission and no value
+        permission = Permission()
+        variable = Variable(permission, datatype, value)
+        self.variables[var] = variable
+
+    def set(self, var, value):
+        # set :: Str 'var' -> LispBase 'value' -> None
+        assert var in self.variables, "%s not in class" % var
+
+        # check permissions
+        permissions = self.variables[var].permission
+        msg = "insufficient permission to set %s" % var
+        assert not permissions.virtual, msg
+        if not permissions.any_write:
+            assert self.internal and permissions.class_write, msg
+        
+        # todo: check datatypes match
+        self.variables[var].value = value
+
+    def get(self, var):
+        # get :: Str 'var' -> LispBase
+        assert var in self.variables, "%s not in class" % var
+
+        # check permissions
+        permissions = self.variables[var].permission
+        msg = "insufficient permission to get %s" % var
+        assert not permissions.virtual, msg
+        if not permissions.any_read:
+            assert self.internal and permissions.class_read, msg
+        
+        value = self.variables[var].value
+        assert value is not None, "%s not set" % var
+        return value
+
+    def chmod(self, var, flags):
+        # chmod  :: Str 'var' -> [Str] 'flags' -> None
+        assert not self.finalised, "can't `chmod` a finalised class"
+        assert var in self.variables, "%s not in class" % var
+        # todo: should only those with write permission be able to set this?
+        self.variables[var].permission.set_flags(flags)
+
+    def call(self, func, args, env):
+        # call :: LispBase 'func' -> LispPair 'args' -> LispBase
+
+        # todo: remove these horrible hacks!
+        # 
+        # They are hack because:
+        # 
+        #   1. If the func is somehow called from somewhere other than here
+        #      it wont have self set or worse will use one from another class!
+        #   2. internal set's it for the duration of the function call. if
+        #      anything else is call it too has priveladed access. (I guess 
+        #      this is consistent with how the Env accesses stuff but I think 
+        #      it is wrong for classes. Also if anything raises an exception 
+        #      internal does not get changed back and everything gets 
+        #      privelaged access.
+
+        if debug:
+            print "call-class %s:" % self
+            print "\targs", args
+
+        newenv = Environment(['self'], [self], env)
+
+        self.internal = True
+        result = func(args, newenv)
+        self.internal = False
+        return result
+
 
     def __call__(self, args, env):
         """__call__ :: SchemePair -> Environment"""
-        # return the parameter name
-
-        if debug:
-            print "call-class:"
-            print "\targs", args
 
         assert isinstance(first(args), LispSymbol)
-        assert rest(args) is nil
-        return self.get(first(args).name)
+        value = self.get(first(args).name)
+        if callable(value):
+            return self.call(value, rest(args), env)
+        else :
+            assert rest(args) is nil
+            return value
 
-    def get(self, param_name):
-        assert param_name not in self.slots
-        assert param_name in self.parameters
-        assert param_name not in self.readonly
-        return self.parameters[param_name]
- 
-    def set(self, param_name, value):
-        assert param_name not in self.slots
-        assert param_name in self.parameters
-        assert param_name not in self.readonly
-        self.parameters[param_name] = value
-    
-    def make_read_only(self, param_name, value = True):
-        assert (param_name in self.parameters) or (param_name in self.slots)
-        self.readonly.add(param_name)
-        
-    def scm_eval(self, env): return mksym("<#class#>")
-    def __str__(self): return "<#class#>"
+    def scm_eval(self, env): return mksym(str(self))
+    def __str__(self): return "<#class-%d#>" % self.id
 
-class_base = LispClass(set(), set(), set())
-
-# -----------------------------------------------------------------------------
-
+class_base = LispClass(set())

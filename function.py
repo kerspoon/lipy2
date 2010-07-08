@@ -180,7 +180,7 @@ def begin_func(args, env):
 # -----------------------------------------------------------------------------
 # class
 # 
-# (class (<parent1> ...) (slot1 ...) (parameter1 ...))
+# (class <parent1> ...)
 # 
 # create a new class
 # 
@@ -189,65 +189,112 @@ def begin_func(args, env):
 def class_func(args, env):
 
     # turn to a list and remove the trailing nil
-    # make the params and slots a string
-    parents = to_list(first(args))[:-1]
-    slots = [x.name for x in to_list(first(rest(args)))[:-1]]
-    params = [x.name for x in to_list(first(rest(rest(args))))[:-1]]
+    parents = to_list(args)[:-1]
 
     # lookup the parents
     evaled_parents = [parent.scm_eval(env) for parent in parents]
 
-    return LispClass(evaled_parents, params, slots)
+    return LispClass(evaled_parents)
+
+# -----------------------------------------------------------------------------
+# class-define!
+# 
+# (class-define! <class-name> <var-name> <type>)
+# (class-define! <class-name> <var-name>)
+# 
+# add a variable to a class
+#
+# (class-define! Point + (Lambda Point Point Point))
+# (class-define! Point y  Int)
+# 
+# -----------------------------------------------------------------------------
+
+def class_define_func(args, env):
+
+    class_name = first(args)
+    var_name = first(rest(args))
+
+    # todo: deal with the datatype
+    # datatype = first(rest(rest(args)))
+    evaled_type = None
+
+    evaled_class = class_name.scm_eval(env)
+    evaled_var = var_name.scm_eval(env).name
+    evaled_class.define(evaled_var, evaled_type)
+
+    return nil
 
 # -----------------------------------------------------------------------------
 # class-set!
 # 
-# (class-set! <class-name> <param-name> <value>)
+# (class-set! <class-name> <var-name> <value>)
 # 
-# change the value of `slot` in `class` to `value`.
+# set a class variable's value
 # 
 # -----------------------------------------------------------------------------
 
 def class_set_func(args, env):
     
     class_name = first(args)
-    param_name = first(rest(args))
+    var_name = first(rest(args))
     value = first(rest(rest(args)))
 
     evaled_class = class_name.scm_eval(env)
-    evaled_param = param_name.scm_eval(env).name
+    evaled_var   = var_name.scm_eval(env).name
     evaled_value = value.scm_eval(env)
 
     # print "class", class_name, evaled_class
     # print "param", param_name, evaled_param
     # print "value", value, evaled_value
 
-    evaled_class.set(evaled_param, evaled_value)
+    evaled_class.set(evaled_var, evaled_value)
     return nil
 
 # -----------------------------------------------------------------------------
-# class-private!
+# class-chmod!
 # 
-# (class-private! <class-name> <param> )
+# (class-chmod! <class-name> <var-name> . <flags>)
 # 
-# make the chosen parameter in the class read only.
+# set a class variable's permission
 #
-# (class-private! point 'length)
-# (class-set! point 'length 4) --> ERROR
+# (class-chmod! Point str 'read-only)
+# (class-chmod! Point x   'any 'virtual)
 #
 # -----------------------------------------------------------------------------
  
-def class_private_func(args, env):
+def class_chmod_func(args, env):
 
-    cls = first(args).scm_eval(env)
-    param = first(rest(args)).scm_eval(env).name
+    class_name = first(args)
+    var_name = first(rest(args))
+    flags = to_list(rest(rest(args)))[:-1]
 
-    assert rest(rest(args)) is nil
-    assert isinstance(cls, LispClass)
-    assert isinstance(cls, LispClass)
-    cls.make_read_only(param)
+    evaled_class = class_name.scm_eval(env)
+    evaled_var   = var_name.scm_eval(env).name
+    evaled_flags = [flag.scm_eval(env).name for flag in flags]
+
+    evaled_class.chmod(evaled_var, evaled_flags)
     return nil
     
+# -----------------------------------------------------------------------------
+# class-finalize!
+# 
+# (class-finalize! <class-name> )
+# 
+# set a class variable's permission
+#
+# (class-finalize! Point)
+#
+# -----------------------------------------------------------------------------
+ 
+def class_finalize_func(args, env):
+
+    class_name = first(args)
+
+    evaled_class = class_name.scm_eval(env)
+
+    evaled_class.finalised = True
+    return nil
+
 # -----------------------------------------------------------------------------
 # Macro
 # 
@@ -396,10 +443,12 @@ def make_basic_environment():
         ("lambda", lambda_func),
         ("begin" , begin_func),
 
-        ("class"          , class_func),
-        ("class-set!"     , class_set_func),
-        ("class-private!" , class_private_func),
-        ("class-base"     , class_base),
+        ("class"           , class_func),
+        ("class-define!"   , class_define_func),
+        ("class-set!"      , class_set_func),
+        ("class-chmod!"    , class_chmod_func),
+        ("class-finalize!" , class_finalize_func),
+        ("BaseClass"       , class_base),
 
         ("mac"         , macro_func),
         ("quasiquote"  , quasiquote_func),

@@ -1,4 +1,6 @@
 
+(display "----common----------------------------------------------------------")
+
 (define (not x) (if x false true))
 
 (define (null obj) (is obj nil))
@@ -65,28 +67,15 @@
      y
      x)))
 
-
-(display (concat '(1 2 3) '(4 5 6)))
-
 (define (length lst)
   (foldr (lambda (a b) (+ 1 b)) 0 lst))
-
-
-;; (display (length '()))
-;; (display (length '(a)))
-;; (display (length '(a b)))
               
 
-;; (define (mac and . args)
-;;   (if (is nil args)
-;;       true
-;;       (if (is nil (cdr args))
-;;           (eval (car args))
-;;           (if (eval (car args)
-;;                     (and (cdr args)))))))
+(display "----when/unless----------------------------------------------------")
 
 (define when   (mac (<cond>.<body>) (list 'if <cond> (cons 'begin <body>))))
-(define unless (mac (<cond>.<body>) (list 'if <cond> nil (cons 'begin <body>))))
+(define unless (mac (<cond>.<body>) (list 'if <cond> nil
+                                          (cons 'begin <body>))))
 
 (unless true 'wont-be-called)
 (when false 'wont-be-called)
@@ -94,7 +83,8 @@
 (unless false 'will-be-called)
 (when true 'will-be-called)
 
-(display "----a------")
+
+(display "----class-new------------------------------------------------------")
 
 ;; (class-set-many! p1 '(x 1 y 2))
 (define (class-set-many! name things)
@@ -105,18 +95,62 @@
 ;; (new p1 point x 1 y 2)
 (define new (mac (<name> <parent> . <data>)
                  `(begin
-                    (define ,<name> (class (,<parent>) nil nil))
+                    (define ,<name> (class ,<parent>))
                     (class-set-many! ,<name> ',<data>))))
 
+(display "----test-class-----------------------------------------------------")
 
 
-(define point (class (class-base) (x y) (str thing)))
-(class-set! point 'str (lambda(self) (display (list (p1 x) " " (p1 y)))))
-(new p1 point x 123 y 456)              ; nil 
-((point str) p1)                        ; ( 123 " " 456 )
+;; ---- New Class
+(define Point (class BaseClass))
+;; ---- Declare Members
+(class-define! Point 'x  Int)
+(class-define! Point 'y  Int)
 
 
-(display "-------------------------------------------------------------------")
+;; ---- Declare Functions
+(class-define! Point '+     (Lambda Point Point))
+(class-define! Point 'str   (Lambda Str None))
+(class-define! Point 'total (Lambda Int None))
+;; ---- Define Functions
+(class-set! Point '+     (lambda (other) (new tmp Point
+                                        'x (+ (self x) (other x))
+                                        'y (+ (self y) (other y))) tmp))
+(class-set! Point 'str   (lambda () (display (list (self x) (self y)))))
+(class-set! Point 'total (lambda () (+ (self x) (self y))))
+;; ---- Permissions
+(class-chmod! Point '+   'read-only)
+(class-chmod! Point 'str 'read-only)
+(class-chmod! Point 'x   'virtual)
+(class-chmod! Point 'y   'virtual)
+;; ---- Finish
+(class-finalize! Point)
+
+;; ---- Create Instance
+(display "here")
+(define p1 (class Point BaseClass))
+(class-set! p1 'x 1)
+(class-set! p1 'y 2)
+  
+;; ---- Create Instance (using macro)
+;; todo: fix broken `new` macro
+;; (new p2 Point 'x 1 'y 2)
+
+(define p2 (class Point BaseClass))
+(class-set! p2 'x 10)
+(class-set! p2 'y 20)
+
+;; ---- Calling a function / getting a variable
+; ((p1 + p2) str) ; p1.add(p2).str()
+;; (p1 x)   ; p1.x
+
+;; todo: these should give differnt values
+(p1 str) ; p1.str()
+(p2 str) ; p1.str()
+ 
+
+
+(display "-----let-forms-----------------------------------------------------")
 
 (define (gather-args args)
   ;; take argument in the form (a1 v1) (a2 v2) ...
@@ -147,35 +181,19 @@
 
 (let ((a 1) (b 2)) (begin (display a) (display b)))
 
-(display "---------------------------------------------------------------")
-(display "-------------------------AAAAAAAAAAAAAAA-----------------------")
-(display "---------------------------------------------------------------")
- 
-(define vec-3d (class (class-base) (x y z) (length str tot x-add)))
- 
-(class-set! vec-3d 'length  3)
-(class-set! vec-3d 'tot (lambda(self) (+ (+ (self x) (self y)) (self z))))
-(class-set! vec-3d 'str (lambda(self) (display (list (self x) (self y) (self z)))))
-(class-set! vec-3d 'x-add (lambda(self val) (+ (self x) val)))
-
-(display (vec-3d length))
-
-(display "---------------------------------------------------------------")
-(display "-------------------------BBBBBBBBBBBBBBB-----------------------")
-(display "---------------------------------------------------------------")
- 
-(new p9 vec-3d x 1 y 2 z 3)
-(display (p9 x))
-(display (p9 y))
-(display (p9 z))
-((p9 str) p9)
-(display (p9 length))
-
-(display "---------------------------------------------------------------")
-(display "-------------------------CCCCCCCCCCCCCCC-----------------------")
-(display "---------------------------------------------------------------")
+;; (display "---------------------------------------------------------------")
+;; (display "-------------------------AAAAAAAAAAAAAAA-----------------------")
+;; (display "---------------------------------------------------------------")
 
 
+;; (display "---------------------------------------------------------------")
+;; (display "-------------------------BBBBBBBBBBBBBBB-----------------------")
+;; (display "---------------------------------------------------------------")
+
+
+;; (display "---------------------------------------------------------------")
+;; (display "-------------------------CCCCCCCCCCCCCCC-----------------------")
+;; (display "---------------------------------------------------------------")
 
 
 ;; (display "---------------------------------------------------------------")
