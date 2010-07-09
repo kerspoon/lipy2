@@ -115,10 +115,6 @@ To overcome this there is another function called `class-private!`. This makes s
 To Do
 =====
 
-1. Fix bugs with classes. (search the todo)
-
-1. As everything is getting more complex I need a better way to do testing. I really need assert or something like it. For that I need `equal?` or `to-str` and `str-eq?`. 
-
 1. Need to do a lot of checking of classes. They have a lot of functionality.
 
 1. Data-types should own their functions. Move the maths into

@@ -293,6 +293,15 @@ class Permission(object):
             self.any_read = False
             self.any_write = False
 
+    def copy(self):
+        perm = Permission()
+        perm.class_read  = self.class_read 
+        perm.class_write = self.class_write
+        perm.any_read    = self.any_read   
+        perm.any_write   = self.any_write  
+        perm.virtual     = self.virtual    
+        return perm
+
 class Variable(object):
     def __init__(self, permission, datatype=None, value=None):
         self.permission = permission
@@ -301,6 +310,11 @@ class Variable(object):
 
     def __str__(self):
         return self.value
+
+    def copy(self):
+        return Variable(self.permission.copy(),
+                        self.datatype,
+                        self.value)
 
 class LispClass(LispBase):
 
@@ -327,8 +341,7 @@ class LispClass(LispBase):
         self.variables = {}
         for sc in self.parents:
             for p, v in sc.variables.items():
-                # todo: is deepcopy(v) needed?
-                self.variables[p] = v
+                self.variables[p] = v.copy()
                 self.variables[p].permission.virtual = False
 
         if debug:
@@ -389,7 +402,7 @@ class LispClass(LispBase):
     def call(self, func, args, env):
         # call :: LispBase 'func' -> LispPair 'args' -> LispBase
 
-        # todo: remove these horrible hacks!
+        # note: could remove these hacks!
         # 
         # They are hack because:
         # 

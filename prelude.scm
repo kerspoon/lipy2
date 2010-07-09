@@ -123,7 +123,7 @@
 (class-set! Point '+     (lambda (other) (new tmp Point
                                         'x (+ (self x) (other x))
                                         'y (+ (self y) (other y))) tmp))
-(class-set! Point 'str   (lambda () (display (list (self x) (self y)))))
+(class-set! Point 'str   (lambda () (list (self x) (self y))))
 (class-set! Point 'total (lambda () (+ (self x) (self y))))
 ;; ---- Permissions
 (class-chmod! Point '+   'read-only)
@@ -151,9 +151,8 @@
 ; ((p1 + p2) str) ; p1.add(p2).str()
 ;; (p1 x)   ; p1.x
 
-;; todo: these should give differnt values
-(p1 str) ; p1.str()
-(p2 str) ; p1.str()
+(assert-eq (p1 str) '(1 2))
+(assert-eq (p2 str) '(10 20))
  
 
 
