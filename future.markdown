@@ -230,3 +230,85 @@ classes would have to be defined in python.
 
 The interesting bit would be that all functions defined outsite of
 classes could simple dispatch to the correct class func. 
+
+-------------------------------------------
+
+If envionment was a class then it would make reading in files a bit easier. They also just should be because thay are almost exactly the same. 
+
+So what are the differences:
+
+Env needs:
+
+  - extra functions
+  - a 'parent-environment' variable (can be a class variable with a special name
+
+It will probalby work even better if environment is a child of LispClass as so:
+
+    class LispEnvironment :: LispClass
+        __init__ :: Optional Environment 'parent' -> None
+           { 
+             # make and chmod the "__parent__" variable
+           }
+
+        func parent :: None -> Optional LispEnvironment
+           { 
+             if "__parent__" not in self.variables:
+                 return None
+             else:
+                 return LispClass.get(self, sym)
+           }
+
+        func get :: Str 'var' -> LispBase
+           { 
+             if sym in self.variables:
+                 return LispClass.get(self, sym)
+             elif self.parent() is None:
+                throw MissingSim()
+             else:
+                return self.parent().get(var)
+           }
+
+        func set :: Str 'var' -> LispBase 'val' -> None
+           { 
+             if var in self.variables:
+                 return LispClass.set(self, var, val)
+             elif self.parent() is None:
+                throw MissingSim()
+             else:
+                return self.parent().set(var, val)
+           }
+
+        func chmod :: Str 'var' -> [Str] 'flags' -> None
+           { 
+             if var in self.variables:
+                 return LispClass.chmod(self, var, flags)
+             elif self.parent() is None:
+                throw MissingSim()
+             else:
+                return self.parent().chmod(var, flags)
+           }
+
+        func define :: **as-parent**
+
+
+Hence when we eval a file it creates a new env. We should have the option to eval in a clean environment. Then the returned Env is the one with all the things added. 
+
+    func repl_stream :: Stream -> Optional Environment -> LispClass
+        {
+          # tokenize, parse and eval entire file
+          # don't care about the result of eval
+          # only the changed env matters
+
+          if env is None:
+              # use the default (whatever that is)
+              # extend it so that we don't needlessly have all the default
+              # functions in out imported class.
+              env = make_environment({}, default_environment)
+
+          for sexp in parse(tokenize(iter(stream))):
+              sexp.scm_eval(env)
+
+          # as the environment is a class we can just return it
+          return env
+        }
+

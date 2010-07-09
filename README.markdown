@@ -115,13 +115,15 @@ To overcome this there is another function called `class-private!`. This makes s
 To Do
 =====
 
-1. Need to do a lot of checking of classes. They have a lot of functionality.
+1. Make Environment a class as per `future.markdown`. Use this to make a `repl_file` function that read a file into a new class.
 
-1. Data-types should own their functions. Move the maths into
-LispInteger. Have function.py just do all the type checking. 
+2. Test classes.
 
-1. Think about a import function that create a (finalised) class containing all the functions of that file.
+3. Continue planning the adding of data types. 
 
+Looking at the goals I think the next step is to get modules (i.e. importing file files) working. It would be nice to reconcile the similarities between the Environment and LispClass classes. And it would be good to make everything a class. It is also a great time to add loads of functionality or do testing but look at the goals. Hence here are less important items:
+
+1. Data-types should own their functions. Move the maths into LispInteger. Have function.py just do all the type checking. 
 
 Links
 ====
