@@ -15,6 +15,7 @@ class LispNil(LispBase):
     def __init__(self): pass
     def scm_eval(self, env): return self
     def __str__(self): return "nil"
+    def __eq__(self, other): return self is other
 
 nil = LispNil()
 
@@ -31,6 +32,9 @@ class LispSymbol(LispBase):
 
     def __str__(self):
         return self.name
+
+    def __eq__(self, other): 
+        return self is other
 
 obarray = {}
 
@@ -61,10 +65,16 @@ class LispPair(LispBase):
             text += str(sexp.first) + " "
             sexp = sexp.rest
         
-        if sexp != nil:
+        if sexp is not nil:
             text += ". " + str(sexp) + " "
         text += ")"
         return text
+
+    def __eq__(self, other):
+        if not isinstance(other, LispPair):
+            return False
+
+        return self.first == other.first and self.rest == other.rest
 
 def cons(first, rest):
     return LispPair(first, rest)
@@ -166,7 +176,7 @@ class LispLambda(object):
         if self.macro:
             # expand in a new env
             mac = self.expand_macro(args, env)
-            print "\tmacro\t", mac
+            if debug: print "\tmacro\t", mac
             # call in the *old* one.
             return mac.scm_eval(env)
        
@@ -191,6 +201,11 @@ class LispLambda(object):
     def __str__(self):
         return "<#procedure#>"
 
+    def __eq__(self, other):
+        if not isinstance(other, LispLambda):
+            return False
+        return self is other
+
 # ----------------------------------------------------------------------------
 
 class LispBool(LispBase):
@@ -199,6 +214,9 @@ class LispBool(LispBase):
         self.val = val
     def scm_eval(self, env): return self
     def __str__(self): return str(self.val).lower()
+
+    def __eq__(self, other):
+        return self is other
 
 true = LispBool(True)
 false = LispBool(False)
@@ -211,6 +229,10 @@ class LispString(LispBase):
         self.text = text
     def scm_eval(self, env): return self
     def __str__(self): return '"%s"' % self.text
+    def __eq__(self, other): 
+        if not isinstance(other, LispString):
+            return False
+        return self.text == other.text
 
 # ----------------------------------------------------------------------------
 
@@ -220,6 +242,12 @@ class LispInteger(LispBase):
         self.num = num
     def scm_eval(self, env): return self
     def __str__(self): return str(self.num)
+    def __cmp__(self, other): 
+        if not isinstance(other, LispInteger):
+            return False
+        return cmp(self.num,other.num)
+
+
 
 # -----------------------------------------------------------------------------
 
@@ -237,8 +265,6 @@ class Permission(object):
         self.virtual     = False
 
     def set_flags(self, flags):
-        # todo: could implement flags that set many things
-        #       such as read-only or private
 
         assert set(flags) <= set(["class-read", "no-class-read", 
                                   "class-write", "no-class-write", 
@@ -275,7 +301,6 @@ class Variable(object):
 
     def __str__(self):
         return self.value
-
 
 class LispClass(LispBase):
 
@@ -371,11 +396,12 @@ class LispClass(LispBase):
         #   1. If the func is somehow called from somewhere other than here
         #      it wont have self set or worse will use one from another class!
         #   2. internal set's it for the duration of the function call. if
-        #      anything else is call it too has priveladed access. (I guess 
+        #      anything else is call it too has priveladed access. I guess 
         #      this is consistent with how the Env accesses stuff but I think 
-        #      it is wrong for classes. Also if anything raises an exception 
-        #      internal does not get changed back and everything gets 
-        #      privelaged access.
+        #      it is wrong for classes. 
+        # 
+        # Actually maybe it's not that bad. (1) can only happen if it get used 
+        # in the wrong way. (2) is consistent with the rest of the language.
 
         if debug:
             print "call-class %s:" % self
@@ -383,9 +409,11 @@ class LispClass(LispBase):
 
         newenv = Environment(['self'], [self], env)
 
-        self.internal = True
-        result = func(args, newenv)
-        self.internal = False
+        try:
+            self.internal = True
+            result = func(args, newenv)
+        finally:
+            self.internal = False
         return result
 
 
@@ -402,5 +430,6 @@ class LispClass(LispBase):
 
     def scm_eval(self, env): return mksym(str(self))
     def __str__(self): return "<#class-%d#>" % self.id
+    def __eq__(self, other): return self is other
 
 class_base = LispClass(set())

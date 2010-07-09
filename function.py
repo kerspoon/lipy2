@@ -404,7 +404,7 @@ def predefined_function(inputfunction):
     def func(args, env):
         evaled_args = [arg.scm_eval(env) for arg in to_list(args)][:-1]
         result = inputfunction(*evaled_args)
-        if result == None: result = nil
+        if result is None: result = nil
         return result
     return func
 
@@ -457,10 +457,11 @@ def make_basic_environment():
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),
 
-        ("cons", predefined_function(lambda a, b: cons(a, b))),
-        ("car" , predefined_function(lambda(a): first(a))),
-        ("cdr" , predefined_function(lambda(a): rest(a))),
-        ("is"  , predefined_function(lambda x, y: to_scm_bool(x is y))),
+        ("cons"   , predefined_function(lambda a, b: cons(a, b))),
+        ("car"    , predefined_function(lambda(a): first(a))),
+        ("cdr"    , predefined_function(lambda(a): rest(a))),
+        ("is?"    , predefined_function(lambda x, y: to_scm_bool(x is y))),
+        ("equal?" , predefined_function(lambda x, y: to_scm_bool(x == y))),
 
         ("+",  two_integer_function(lambda a, b: a + b)),
         ("*",  two_integer_function(lambda a, b: a * b)),

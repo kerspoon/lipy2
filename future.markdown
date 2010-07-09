@@ -200,26 +200,33 @@ main
 -- -- <#lambda#> 'list' (...)
 
 
-
 -------------------------------------------
 
 
-    class Variable
-        var permission : Permission
-        var type       : Optional Type
-        var value      : Optional LispBase
+If everything was a class then we could call
 
-    class LispClass :: LispBase
-        private var parents   :: Set LispClass
-        private var variables :: Dict Str Variable
+    (15 + 20)
 
-        func __init__ 
-        func __call__ 
-        func __str__
-        func scm_eval
+in the same way that we call:
 
-        func chmod  :: Str 'var' -> [Str] 'flags' -> None
-        func define :: Str 'var' -> Type 'type' -> None
-        func set    :: Str 'var' -> LispBase 'value' -> None
-        func get    :: Str 'var' -> LispBase
-        func call   :: Str 'var' -> LispPair 'args' -> LispBase
+    (p1 + 20)
+
+15 gets parsed into a Integer class thing. We could also do
+
+    (+ 15 20)
+
+which would probably give the same result. (the + defined inthe env
+may be differnt from the one in the class). To do this all basic
+classes would have to be defined in python.
+
+
+    class_base = LispClass(set())
+
+    class_int = LispClass([class_base])
+    class_int.define("val", None, 0)
+    class_int.define("+", None, int_add_func)
+    ...
+    class_int.finalised = True
+
+The interesting bit would be that all functions defined outsite of
+classes could simple dispatch to the correct class func. 
