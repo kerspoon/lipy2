@@ -1,4 +1,7 @@
-from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base, Environment
+from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base, Environment, LispString
+
+from lex import tokenize
+from parse import parse
 
 # -----------------------------------------------------------------------------
 # QUOTE
@@ -397,8 +400,50 @@ def quasiquote_func(args, env):
 
         return inner_qq(arg)
 
+
+
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+def read_file(stream, env):
+
+    # tokenize, parse and eval entire file
+    # don't care about the result of eval
+    # only the changed env matters
+
+    no_env = env is None
+    if no_env:
+        # use the default (whatever that is)
+        # extend it so that we don't needlessly have all the default
+        # functions in out imported class.
+        env = Environment([], [], basic_environment)
+
+    for sexp in parse(tokenize(iter(stream))):
+        sexp.scm_eval(env)
+
+    # I guess we should kill the parent if there was no 
+    # env before. No need having thingslike `quote` in there.
+    if no_env:
+        del env.variables["__parent__"]
+
+    # as the environment is a class we can just return it
+    return env
+
+def import_func(args, env):
+    file_name = first(args)
+    assert rest(args) is nil
+    assert isinstance(file_name, LispString)
+    return read_file(open(file_name.text), None)
+
+def include_func(args, env):
+    file_name = first(args)
+    assert rest(args) is nil
+    assert isinstance(file_name, LispString)
+    read_file(open(file_name.text), env)
+    return nil
+
 # -----------------------------------------------------------------------------
 
 def predefined_function(inputfunction):
@@ -454,6 +499,9 @@ def make_basic_environment():
         ("mac"         , macro_func),
         ("quasiquote"  , quasiquote_func),
         ("unquote"     , unquote_func),
+
+        ("import"     , import_func),
+        ("include"     , include_func),
 
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),

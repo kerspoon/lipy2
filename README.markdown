@@ -115,19 +115,35 @@ To overcome this there is another function called `class-private!`. This makes s
 To Do
 =====
 
-1. Make a `repl_file` function that read a file into a new class.
+Testing
+----
 
-2. Test classes.
+There are so many things that need testing but I'm seriously considering porting this to `D` to take advantage of it's type checking. Regardless it would be nice to have a better test facilities including testing that the correct exception gets thrown. Part of this involves changing `assert` to `raise` throughout the program. As well as catching exceptions so the repl can continue. 
 
-3. Continue planning the adding of data types. 
+Even More Objects
+----
 
-Looking at the goals I think the next step is to get modules (i.e. importing file files) working. It would be good to make everything a class. It is also a great time to add loads of functionality or do testing but look at the goals. Hence here are less important items:
+It would also be fun to change the parser to make everything a class. Basically the LispXXX data types would be stored in a LispClass instance in the `variables["__data__"]` member. This would enable `(15 + 20)` to work as expected!
 
-1. Data-types should own their functions. Move the maths into LispInteger. Have function.py just do all the type checking. 
+Better File Organisiation
+----
 
-1. Most asserts should be changed to exceptions.
+Certain files are getting way too big. 
 
-1. Execptions should be caught at the top level and the repl continue.
+Data Types
+----
+
+Continue planning the adding of data types. 
+
+Debugging
+----
+
+For debugging it would be great to have lambdas store (or lookup) their defined name in the env. For debugging viewing the historic call stack as well as stack frames would be all that is required to be awesome:
+
+    main
+    -- <#built-in#> 'define' (name='bob', val='15')
+    -- <#lambda#> 'fred' (...)
+    -- -- <#lambda#> 'list' (...)
 
 Links
 ====

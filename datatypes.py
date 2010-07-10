@@ -492,7 +492,7 @@ class Environment(LispClass):
         if var in self.variables:
             return super(Environment, self).get(var)
         elif self.parent() is None:
-            raise MissingSym()
+            raise MissingSym(var)
         else:
             return self.parent().get(var)
 
@@ -501,7 +501,7 @@ class Environment(LispClass):
         if var in self.variables:
             return super(Environment, self).set(var, val)
         elif self.parent() is None:
-            raise MissingSym()
+            raise MissingSym(var)
         else:
             return self.parent().set(var, val)
 
@@ -510,23 +510,28 @@ class Environment(LispClass):
         if var in self.variables:
             return super(Environment, self).chmod(var, flags)
         elif self.parent() is None:
-            raise MissingSym()
+            raise MissingSym(var)
         else:
             return self.parent().chmod(var, flags)
 
     def __str__(self):
         # func __str__ :: None -> Str
-        ret = "\n"
+        ret = "PRINT ENV\n"
         for sym, val in self.variables.items():
-            ret += sym + " = " + str(val) + "\n"
+            if sym != "__parent__":
+                ret += sym + " = " + str(val) + "\n"
         ret += "---\n"
         if self.parent() is not None:
             ret += str(self.parent())
         else:
             ret += "===\n"
+        
         return ret
 
-#------------------------------------------------------------------------------
+
+
+
+#------------------------------u------------------------------------------------
 
 def test():
     topenv = Environment(["a","b","c"],[1, 2, 3], None)

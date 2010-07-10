@@ -1,7 +1,7 @@
 
 from lex import tokenize
 from parse import parse
-from function import basic_environment
+from function import basic_environment, read_file
 from datatypes import Environment
 
 DEBUG = False
@@ -39,11 +39,11 @@ def reader_raw():
 
 # -----------------------------------------------------------------------------
 
-def read_file(stream, env):
-    if DEBUG: print "read file start:", stream
-    for result in repl(env, parse(tokenize(iter(stream)))):
-        if DEBUG: print result
-    if DEBUG: print "read file finished: ", stream
+# def read_file(stream, env):
+#     if DEBUG: print "read file start:", stream
+#     for result in repl(env, parse(tokenize(iter(stream)))):
+#         if DEBUG: print result
+#     if DEBUG: print "read file finished: ", stream
 
 # -----------------------------------------------------------------------------
 
@@ -292,14 +292,15 @@ def main():
     inp = """
 ; (define (list . x) x)
 "----- START -----"
+(include "prelude.scm")
+(define prelude (import "prelude.scm"))
+
+prelude
+(prelude p1 str)
 
 """
 
     env = Environment([], [], basic_environment)
-
-    if True:
-        with open("prelude.scm") as prelude:
-            read_file(prelude, env)
 
     if True:
         for result in repl(env,parse(tokenize([inp]))):
