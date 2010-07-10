@@ -1,5 +1,4 @@
-from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base
-from environment import Environment
+from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base, Environment
 
 # -----------------------------------------------------------------------------
 # QUOTE
@@ -93,7 +92,9 @@ def define_func(args, env):
 
     assert isinstance(var, LispSymbol)
     result = value.scm_eval(env)
-    env.add(var.name, result)
+
+    # todo set the datatype
+    env.define(var.name, None, result)
     return nil
 
 # -----------------------------------------------------------------------------

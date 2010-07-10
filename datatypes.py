@@ -1,7 +1,3 @@
-
-from environment import Environment
-from copy import deepcopy
-
 debug = False
 
 # ----------------------------------------------------------------------------
@@ -247,8 +243,6 @@ class LispInteger(LispBase):
             return False
         return cmp(self.num,other.num)
 
-
-
 # -----------------------------------------------------------------------------
 
 class Permission(object):
@@ -309,12 +303,16 @@ class Variable(object):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
     def copy(self):
         return Variable(self.permission.copy(),
                         self.datatype,
                         self.value)
+
+class MissingSym(Exception): pass
+class AlreadyDefined(Exception): pass
+class InvalidPermission(Exception): pass
 
 class LispClass(LispBase):
 
@@ -356,8 +354,9 @@ class LispClass(LispBase):
 
     def define(self, var, datatype=None, value=None):
         # define :: Str 'var' -> Type 'type' -> None
-        assert not self.finalised, "can't `define` a finalised class"
-        
+        if self.finalised: raise InvalidPermission("finalised:" + var)
+        if var in self.variables: raise AlreadyDefined(var)
+
         # give the default permission and no value
         permission = Permission()
         variable = Variable(permission, datatype, value)
@@ -365,37 +364,38 @@ class LispClass(LispBase):
 
     def set(self, var, value):
         # set :: Str 'var' -> LispBase 'value' -> None
-        assert var in self.variables, "%s not in class" % var
+        if var not in self.variables: raise MissingSym(var)
 
         # check permissions
         permissions = self.variables[var].permission
-        msg = "insufficient permission to set %s" % var
-        assert not permissions.virtual, msg
+        if permissions.virtual: raise InvalidPermission(var)
         if not permissions.any_write:
-            assert self.internal and permissions.class_write, msg
+            if not (self.internal and permissions.class_write):
+                raise InvalidPermission(var)
         
+
         # todo: check datatypes match
         self.variables[var].value = value
 
     def get(self, var):
         # get :: Str 'var' -> LispBase
-        assert var in self.variables, "%s not in class" % var
+        if var not in self.variables: raise MissingSym(var)
 
         # check permissions
         permissions = self.variables[var].permission
-        msg = "insufficient permission to get %s" % var
-        assert not permissions.virtual, msg
+        if permissions.virtual: raise InvalidPermission(var)
         if not permissions.any_read:
-            assert self.internal and permissions.class_read, msg
-        
+            if not (self.internal and permissions.class_read):
+                raise InvalidPermission(var)
+
         value = self.variables[var].value
         assert value is not None, "%s not set" % var
         return value
 
     def chmod(self, var, flags):
         # chmod  :: Str 'var' -> [Str] 'flags' -> None
-        assert not self.finalised, "can't `chmod` a finalised class"
-        assert var in self.variables, "%s not in class" % var
+        if self.finalised: raise InvalidPermission("finalised:" + var)
+        if var not in self.variables: raise MissingSym(var)
         # todo: should only those with write permission be able to set this?
         self.variables[var].permission.set_flags(flags)
 
@@ -437,7 +437,7 @@ class LispClass(LispBase):
         value = self.get(first(args).name)
         if callable(value):
             return self.call(value, rest(args), env)
-        else :
+        else:
             assert rest(args) is nil
             return value
 
@@ -446,3 +446,149 @@ class LispClass(LispBase):
     def __eq__(self, other): return self is other
 
 class_base = LispClass(set())
+
+
+# ----------------------------------------------------------------------------
+
+class Environment(LispClass):
+    """Binds symbols to values. Seperate frame can mean bindings can 
+    shadow others. You cannot re-bind something in the same frame though
+    you can set it to something else."""
+
+    def __init__(self, syms, vals, parent):
+        # init :: [Str] -> [LispBase] -> Optional Environment -> Environment
+
+        # Environment have no parent classes, 
+        # they don't need to inherit anything!
+        super( Environment, self ).__init__([])
+
+
+        # we could have parent as a mamember of Environment directly rather
+        # than through self.variables but this way we can if we want expose it
+        # to Lisp as a class.
+
+        if parent:
+            assert(isinstance(parent, Environment))
+            super(Environment, self).define("__parent__", None, parent)
+            super(Environment, self).chmod("__parent__", 
+                                           ["no-class-read", "no-class-write",
+                                            "no-any-read", "no-any-write"])
+
+        for sym, val in zip(syms, vals):
+            assert(isinstance(sym, str))
+            # todo: this could be usefull but not for testing
+            # or adding primative functions (which are not LispBase)
+            # assert(isinstance(val, LispBase))
+            super(Environment, self).define(sym, None, val)
+
+    def parent(self):
+        if "__parent__" in self.variables:
+            return self.variables["__parent__"].value
+        else:
+            return None
+
+    def get(self, var):
+        # func get :: Str 'var' -> LispBase
+        if var in self.variables:
+            return super(Environment, self).get(var)
+        elif self.parent() is None:
+            raise MissingSym()
+        else:
+            return self.parent().get(var)
+
+    def set(self, var, val):
+        # func set :: Str 'var' -> LispBase 'val' -> None
+        if var in self.variables:
+            return super(Environment, self).set(var, val)
+        elif self.parent() is None:
+            raise MissingSym()
+        else:
+            return self.parent().set(var, val)
+
+    def chmod(self, var, flags):
+        # func chmod :: Str 'var' -> [Str] 'flags' -> None
+        if var in self.variables:
+            return super(Environment, self).chmod(var, flags)
+        elif self.parent() is None:
+            raise MissingSym()
+        else:
+            return self.parent().chmod(var, flags)
+
+    def __str__(self):
+        # func __str__ :: None -> Str
+        ret = "\n"
+        for sym, val in self.variables.items():
+            ret += sym + " = " + str(val) + "\n"
+        ret += "---\n"
+        if self.parent() is not None:
+            ret += str(self.parent())
+        else:
+            ret += "===\n"
+        return ret
+
+#------------------------------------------------------------------------------
+
+def test():
+    topenv = Environment(["a","b","c"],[1, 2, 3], None)
+
+    def test1():
+        topenv = Environment(["a","b","c"], [1, 2, 3], None)
+        assert(topenv.get("a") == 1)
+        assert(topenv.get("b") == 2)
+        assert(topenv.get("c") == 3)
+
+    def test2():
+        newenv = Environment([], [], topenv)
+        assert(newenv.get("a") == 1)
+        assert(newenv.get("b") == 2)
+        assert(newenv.get("c") == 3)
+
+    def test3():
+        newenv = Environment(["x"],[7], topenv)
+        assert(newenv.get("x") == 7)
+        assert(newenv.get("a") == 1)
+        assert(newenv.get("b") == 2)
+        assert(newenv.get("c") == 3)
+
+    def test4():
+        newenv = Environment([], [], topenv)
+        newenv.define("x", None, 7)
+        assert(newenv.get("x") == 7)
+        newenv.set("x", 99)
+        assert(newenv.get("x") == 99)
+
+    def test5():
+        try:
+            newenv = Environment([], [], topenv)
+            newenv.define("x", None, 7)
+            newenv.define("x", None, 7)
+            raise Exception("an error should have been thrown")
+        except AlreadyDefined:
+            pass
+
+    def test6():
+        try:
+            newenv = Environment([], [], topenv)
+            newenv.get("notdefined")
+            raise Exception("an error should have been thrown")
+        except MissingSym:
+            pass
+
+    def test7():
+        try:
+            newenv = Environment([], [], topenv)
+            newenv.set("x", 7)
+            raise Exception("an error should have been thrown")
+        except MissingSym:
+            pass
+
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+    test6()
+    test7()
+
+# test()
+

@@ -1,8 +1,8 @@
 
 from lex import tokenize
 from parse import parse
-from environment import Environment
 from function import basic_environment
+from datatypes import Environment
 
 DEBUG = False
 
