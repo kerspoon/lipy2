@@ -44,6 +44,8 @@ def mksym(name):
 
 # ----------------------------------------------------------------------------
 
+call_stack = []
+
 class LispPair(LispBase):
     def __init__(self, first, rest):
         self.first = first
@@ -51,8 +53,11 @@ class LispPair(LispBase):
     
     def scm_eval(self, env):
         func = self.first.scm_eval(env)
-        assert hasattr(func, '__call__'), "cannot call '%s' in %s" % (func,self)
-        return func(self.rest, env)
+        assert callable(func), "cannot call '%s' in %s" % (func, self)
+        call_stack.append(func)
+        result = func(self.rest, env)
+        call_stack.pop()
+        return result
 
     def __str__(self):
         text = "( "
@@ -71,6 +76,9 @@ class LispPair(LispBase):
             return False
 
         return self.first == other.first and self.rest == other.rest
+
+def get_stack():
+    return from_list(call_stack)
 
 def cons(first, rest):
     return LispPair(first, rest)
@@ -130,8 +138,14 @@ def extended_env(scm_vars, scm_args, env):
     return Environment(evaled_vars, evaled_args, env)
 
 class LispLambda(object):
+
+    lambda_id = 0
+
     def __init__(self, scm_vars, body, macro=False):
         """Procedure :: SchemeBase -> LispPair"""
+
+        LispLambda.lambda_id += 1
+        self.id = LispLambda.lambda_id
 
         self.body = cons(mksym("begin"), body)
         self.macro = macro
@@ -192,10 +206,10 @@ class LispLambda(object):
         return self.body.scm_eval(new_env)
     
     def scm_eval(self, env):
-        return mksym("<#procedure#>")
+        return mksym(str(self))
 
     def __str__(self):
-        return "<#procedure#>"
+        return "<#procedure-%d#>" % self.id
 
     def __eq__(self, other):
         if not isinstance(other, LispLambda):

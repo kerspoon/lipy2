@@ -297,7 +297,7 @@ def main():
 
 prelude
 (prelude p1 str)
-
+(env)
 """
 
     env = Environment([], [], basic_environment)

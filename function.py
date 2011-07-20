@@ -1,4 +1,4 @@
-from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base, Environment, LispString
+from datatypes import nil, true, false, mksym, cons, from_list, to_list, LispSymbol, LispLambda, LispPair, first, rest, LispInteger, LispClass, class_base, Environment, LispString, get_stack
 
 from lex import tokenize
 from parse import parse
@@ -446,6 +446,11 @@ def include_func(args, env):
 
 # -----------------------------------------------------------------------------
 
+def env_func(args, env):
+    return env
+
+# -----------------------------------------------------------------------------
+
 def predefined_function(inputfunction):
     def func(args, env):
         evaled_args = [arg.scm_eval(env) for arg in to_list(args)][:-1]
@@ -501,14 +506,17 @@ def make_basic_environment():
         ("unquote"     , unquote_func),
 
         ("import"     , import_func),
-        ("include"     , include_func),
+        ("include"    , include_func),
+        ("env"        , env_func),
+
+        ("stack"   , predefined_function(get_stack)),
 
         ("display", predefined_function(lambda a: display(str(a)))),
         ("newline", predefined_function(lambda a: display("\n"))),
 
-        ("cons"   , predefined_function(lambda a, b: cons(a, b))),
-        ("car"    , predefined_function(lambda(a): first(a))),
-        ("cdr"    , predefined_function(lambda(a): rest(a))),
+        ("cons"   , predefined_function(cons)),
+        ("car"    , predefined_function(first)),
+        ("cdr"    , predefined_function(rest)),
         ("is?"    , predefined_function(lambda x, y: to_scm_bool(x is y))),
         ("equal?" , predefined_function(lambda x, y: to_scm_bool(x == y))),
 
